@@ -199,7 +199,7 @@ function addToPath()
 PATH="${HOME}/bin:${HOME}/local/bin:$PATH"
 
 if which ruby >/dev/null && which gem >/dev/null; then
-    addToPath "$(ruby -rubygems -e 'puts Gem.user_dir')/bin"
+    addToPath "$(ruby -e 'puts Gem.user_dir')/bin"
 fi
 
 # Add JAVA_HOME to path if it exists
