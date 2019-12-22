@@ -1,0 +1,291 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
+
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
+
+if [ "$(printf "%d" "'A")" -eq 193 ]; then
+    export EBCDIC=true
+fi
+
+# are we running in guake terminal?
+# Used in VIM configuration
+GPARENT="$(pstree -as $$)"
+if echo "$GPARENT" | grep -q "guake.main"; then
+    export GUAKE=true
+else
+    unset GUAKE
+fi
+unset GPARENT
+
+#if [ $(umask) != "0077" ]; then
+#    echo "============================================="
+#    echo ""
+#    echo " WARNING: Insecure umask: $(umask)"
+#    echo ""
+#    echo " Edit ~/.profile to change."
+#    echo ""
+#    echo "============================================="
+#fi
+
+# don't put duplicate lines in the history. See bash(1) for more options
+# don't overwrite GNU Midnight Commander's setting of `ignorespace'.
+HISTCONTROL=$HISTCONTROL${HISTCONTROL+,}ignoredups
+# ... or force ignoredups and ignorespace
+HISTCONTROL=ignoreboth
+
+# Show timestamp with commands when calling history
+HISTTIMEFORMAT='%F-%T: '
+
+HISTIGNORE="rotX*"
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+export HISTSIZE=2000
+export HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+
+# The pattern "**" used in a pathname expansion context matches all files and
+# zero or more directories and subdirectories.
+shopt -s globstar
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh /usr/bin/lesspipe)"
+
+#---------[ Determine Color Support ]------------------------------------------
+COLOR_SUPPORTED=
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+    # We have color support; assume it's compliant with Ecma-48
+    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+    # a case would tend to support setf rather than setaf.)
+    COLOR_SUPPORTED=yes
+else
+    COLOR_SUPPORTED=
+fi
+
+# If we have this TERMs, we definitely have color.
+case "$TERM" in
+    xterm-color) COLOR_SUPPORTED=yes;;
+esac
+
+#---------[ PROMPT ]-----------------------------------------------------------
+
+#
+# Assumes:
+# $1: The standard terminal title
+#
+getTermTitle()
+{
+    if [ -n "$MANUAL_TERMINAL_TITLE" ]; then
+        echo "$MANUAL_TERMINAL_TITLE"
+    else
+        echo "$1"
+    fi
+}
+
+termTitle()
+{
+    if [ $# -eq 0 ]; then
+        unset MANUAL_TERMINAL_TITLE
+    else
+        export MANUAL_TERMINAL_TITLE="$*"
+    fi
+}
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+GIT_PS1_SHOWDIRTYSTATE=1
+GIT_PS1_SHOWUNTRACKEDFILES=1
+GIT_PS1_SHOWUPSTREAM=1
+
+if [ "$(type -t __git_ps1)" != "function" ]; then
+    if [ -f ~/.bash_git ]; then
+        . ~/.bash_git
+    else
+        function __git_ps1 {
+            return 0
+        }
+    fi
+fi
+
+if [ "$COLOR_SUPPORTED" = yes ]; then
+    defClr=32
+    [ "$(id -un)" = "root" ] && defClr="41;33"
+    nClr="$defClr"
+    pClr=31
+    # [$(date +%H:%M:%S)]
+    PS1="${debian_chroot:+($debian_chroot)}\[\033[01;${nClr}m\]($?)\[\e]0;$(getTermTitle '\w')\a\]\u@\h\[\033[00m\] \[\033[01;${pClr}m\]\w\[\033[00m\]\n$(__git_ps1 '[%s] ')$ "
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;${nClr}m\]($?)\[\e]0;$(getTermTitle "\w")\a\]\u@\h\[\033[00m\] \[\033[01;${pClr}m\]\w\[\033[00m\]\n$(__git_ps1 "[%s] ")$ '
+
+else
+    PS1='${debian_chroot:+($debian_chroot)}($?)\u@\h:\w\n$(__git_ps1 "[%s] ")$ '
+fi
+if [ $SHLVL -gt 1 ]; then
+    PS1="[$SHLVL]$PS1"
+fi
+
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    # Set the title of the terminal
+    #PROMPT_COMMAND='echo -ne "\033]2;${PWD/\/home\/rks/~}\007"'
+    #PROMPT_COMMAND='echo -en "\033]2;${PWD/#$HOME/\~}\007"'
+    #PROMPT_COMMAND='if [ $? = 0 ]; then nClr="$defClr"; else nClr="43;31";fi;echo -en "\033]2;${PWD/#$HOME/\~}\007"'
+    ;;
+*)
+    ;;
+esac
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    if [ -r "$HOME/.dircolors" ]; then
+        eval "$(dircolors -b ~/.dircolors)"
+    else
+        eval "$(dircolors -b)"
+    fi
+fi
+
+if [ "$COLOR_SUPPORTED" = "yes" ]; then
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+#---------[ Update the PATH ]--------------------------------------------------
+
+function checkPath()
+{
+    typeset p tPath=""
+    typeset IFS=':'
+    for p in $PATH; do
+        if [ -z "$p" ]; then
+            : #echo >&2 "INFO: Empty PATH entry removed"
+        elif echo ":$tPath:" | grep ":$p:" >/dev/null; then
+            : #echo >&2 "INFO: Duplicate PATH entry removed: $p"
+        elif [ "${p:0:1}" != "/" ]; then
+            : #echo >&2 "INFO: Relative PATH entry removed: $p"
+        elif [ ! -d "$p" ]; then
+            : #echo >&2 "INFO: Not existing PATH entry removed: $p"
+        else
+            tPath="${tPath}:$p"
+        fi
+    done
+    unset IFS
+    PATH=$(echo ":$tPath:" | sed 's%:::*%%g;s%^::*%%;s%::*$%%')
+}
+
+function addToPath()
+{
+    local dir
+    dir=$(readlink -f "$1")
+    if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
+        export PATH="$PATH:$dir"
+    fi
+}
+
+PATH="${HOME}/bin:${HOME}/local/bin:$PATH"
+
+if which ruby >/dev/null && which gem >/dev/null; then
+    addToPath "$(ruby -rubygems -e 'puts Gem.user_dir')/bin"
+fi
+
+# Add JAVA_HOME to path if it exists
+if [ -n "$JAVA_HOME" ]; then
+    addToPath "$JAVA_HOME/bin"
+fi
+
+checkPath
+
+# add local man directories if they exist
+if [ -d "$HOME/man" ]; then
+    export MANPATH="$MANPATH:$HOME/man"
+fi
+if [ -d "$HOME/local/man" ]; then
+    export MANPATH="$MANPATH:$HOME/local/man"
+fi
+
+# Add ANT to path if it exists
+#ANT_PATH=/home/de104908/local/share/apache-ant-1.6.2/
+#test -d $ANT_PATH && MyPath=$MyPath:$ANT_PATH
+#
+
+
+#---------[ Includes ]---------------------------------------------------------
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+export EDITOR=vi
+export VISUAL=vim
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -z "$BASH_COMPLETION" ] && ! shopt -oq posix; then
+    if [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+    if [ -f ${HOME}/.bash_completion ]; then
+        . ${HOME}/.bash_completion
+    fi
+    if [ -f ${HOME}/.was-completion.bash ]; then
+        . ${HOME}/.was-completion.bash
+    fi
+    if [ -f ${HOME}/.maven-completion.bash ]; then
+        . ${HOME}/.maven-completion.bash
+    fi
+fi
+
+
+# disable CapsLock
+#xmodmap -e "remove lock = Caps_Lock"
+
+#
+# Workaround for GNOME-Terminal bug.
+# With this a new tab is opened with the same directory as the current tab.
+#if [ -n "$GUAKE" ]; then
+#    source /etc/profile.d/vte-2.91.sh
+#fi
+
+# if [[ -z "$GDK_NATIVE_WINDOWS" ]]; then
+#     export GDK_NATIVE_WINDOWS=1
+# fi
+
+export GOPATH=$HOME/code/go
+if [ ! -d "$GOPATH" ]; then
+    mkdir -p "$GOPATH"
+fi
+addToPath "$GOPATH/bin"
+
+[ -f "$HOME/.quick_change_dir" ] && . $HOME/.quick_change_dir
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+true
+
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+# added by travis gem
+[ -f /home/rks/.travis/travis.sh ] && source /home/rks/.travis/travis.sh
+

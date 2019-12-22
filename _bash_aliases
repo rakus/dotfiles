@@ -1,0 +1,619 @@
+################################################################################
+#
+#  Aliases
+#
+#  Ralf Schandl
+#
+################################################################################
+
+[ -n "$BASH_DEBUG" ] &&       echo Start sourcing .aliases
+[ "$BASH_DEBUG" = "FULL" ] && set -x
+
+
+alias wlanreset="sudo killall wpa_supplicant"
+
+alias wim='ssh special@9.2.122.252'
+
+alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N'
+
+# list my local git repos
+function gitrepos
+{
+    (
+    cd "$HOME/Documents/Privat/diskstation/gitolite-admin"
+    remote=$(git remote -v | head -1 | cut -d $'\t' -f2 | cut -d: -f1)
+    grep repo < conf/gitolite.conf | sed "s/^.* /${remote}:/"
+    )
+}
+
+
+function addToPath()
+{
+    local dir
+    dir=$(readlink -f "$1")
+    if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
+        PATH="$PATH:$dir"
+    fi
+}
+
+# Quick calculation like 'calc 3+2'
+# Note: 'calc 2x3' is interpreted as 'calc 2*3'
+function calc
+{
+    echo "scale=2; $*" | sed "s/x/*/g" | bc
+}
+
+# reads file/dir names from stdin and only print to stdout if they exist
+function exist_filter
+{
+    local d
+    while read d; do
+        [[ -e $d ]] && echo "$d"
+    done
+}
+
+# reads names from stdin and only print to stdout if name is a existing
+# directory
+function dir_filter
+{
+    local d
+    while read d; do
+        [[ -d "$d" ]] && echo "$d"
+    done
+}
+
+# reads names from stdin and only print to stdout if name is a existing
+# regular file
+function file_filter
+{
+    local f
+    while read f; do
+        [[ -f "$f" ]] && echo "$f"
+    done
+}
+
+function exe_filter
+{
+    local f
+    while read f; do
+        [[ -f "$f" ]] && [[ -x "$f" ]] && echo "$f"
+    done
+}
+
+# read text from stdin and prefix it with the current timestamp
+# Only available with gawk (but without milliseconds):
+# alias ts_prefix="awk '{print strftime(\"%Y-%m-%dT%H:%M:%S\"), \$0;}'"
+function ts_prefix
+{
+    local l
+    while read l; do
+        echo "$(date "+%Y-%m-%dT%H:%M:%S.%03N"): $l"
+    done
+}
+
+# filters out ANSI escape sequences
+esc_filter()
+{
+    local l
+    while read l; do
+        echo "$l" | sed "s/\x1B\[[^A-Za-z]*[A-Za-z]//g"
+    done
+}
+
+# filters out color codes
+color_filter()
+{
+    local l
+    while read l; do
+        echo "$l" |  sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})?)?[m|K]//g"
+    done
+}
+
+numbered()
+{
+    local i=1
+    while read l; do
+        printf "%6d\t%s\n" $i "$l"
+        let i+=1
+    done
+}
+
+#
+# Prints the scp-path of the given filename
+# scp-path is: <user>@<host>:<full qualified filename>
+# Print a warning if is not readable.
+#
+function scppath()
+{
+    local fqFile
+    if [[ $1 =~ ^/ ]]; then
+        # absolut path
+        fqFile=$1
+    else
+        fqFile=$(readlink -f "$PWD/$1")
+    fi
+
+    if [ ! -e "$fqFile" ]; then
+        echo >&2 "WARNING: File does not exist: $fqFile"
+    else
+        if [ ! -r "$fqFile" ]; then
+            echo >&2 "WARNING: File not readable: $fqFile"
+        fi
+        if [ ! -w "$fqFile" ]; then
+            echo >&2 "WARNING: File not writable: $fqFile"
+        fi
+    fi
+
+    echo "$USER@$(hostname):$fqFile"
+}
+
+#
+# Midnight commander function.
+# On Exit change to the directory MC showed.
+#
+function mc
+{
+    MC_USER=$(id | sed 's/[^(]*(//;s/).*//')
+    MC_PWD_FILE="${TMPDIR-/tmp}/mc-$MC_USER/mc.pwd.$$"
+    /usr/bin/mc -P "$MC_PWD_FILE" "$@"
+
+    if test -r "$MC_PWD_FILE"; then
+        MC_PWD="$(cat "$MC_PWD_FILE")"
+        if test -n "$MC_PWD" && test -d "$MC_PWD"; then
+            cd "$MC_PWD"
+        fi
+        unset MC_PWD
+    fi
+
+    rm -f "$MC_PWD_FILE"
+    unset MC_PWD_FILE
+}
+
+# grep history
+function gh
+{
+    HISTTIMEFORMAT='' history | grep "$@" | grep -v "^ *[0-9][0-9]*  ght\\? "| uniq -f1
+}
+
+function ght
+{
+    history | grep "$@" | grep -v "^ *[0-9][0-9]*  2[^ ]* ght\\? "
+}
+
+#---------[ Directory Handling ]-----------------------------------------------
+
+#
+# cd with multiple arguments
+#
+# 'cd sr ma ja' does 'cd sr*/ma*/ja*'
+# If multiple matches uses select.
+#
+function cd
+{
+    typeset OPTIND OPTARG dir o EL PE E AT
+
+    while getopts "LPE@" o "$@"; do
+        case $o in
+            L) EL=true
+                ;;
+            P) PE=true
+                ;;
+            e) E=true
+                ;;
+            @) AT=true
+                ;;
+            *)
+                echo 'cd: usage: cd [-L|[-P [-e]] [-@]] [dir]'
+                return 1
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    if [ $# -eq 0 ]; then
+        dir="$HOME"
+    elif [ $# -eq 1 ]; then
+        dir="$1"
+    else
+        typeset dirPattern=$(printf "%q*/" "$@" | sed 's%\\\*%*%g;s%/\*/%/%g;s%///*%/%g')
+        typeset IFS=$'\n'
+        typeset -a dirs=( $(ls -d ${dirPattern} 2>/dev/null) )
+        unset IFS
+        if [ ${#dirs[@]} -eq 0 ]; then
+            echo >&2 "cd: $dirPattern: No such directory"
+            return 1
+        elif [ ${#dirs[@]} -eq 1 ]; then
+            dir=${dirs[0]}
+        else
+            typeset sel
+            dir=$(select sel in "${dirs[@]}"; do echo "$sel"; return 0; done)
+            if [ -z "$dir" ]; then
+                return 1
+            fi
+        fi
+    fi
+
+    builtin cd ${EL+-L} ${PE+-P} ${E+-e} ${AT+-@} "$dir"
+}
+
+#
+# Change directory upwarts
+#
+#     up             - Up one level
+#     up <number>    - Up <number> levels
+#     up <string>    - Up to dir starting with <string>
+#     up /<number>   - Up to dir starting with <number>
+#
+function up
+{
+    typeset arg cdstr
+    arg=${1:-1}
+    if [ -z "${arg//[0-9]/}" ]; then
+        cdstr=$(printf '%0.s../' $(seq 1 $arg))
+    else
+        arg="${arg##/}"
+        if [[ "$arg" = */ ]]; then
+            arg="${arg%%/}"
+        else
+            arg="${arg}[^/]*"
+        fi
+        cdstr=$(pwd | grep -o "^.*/${arg}/")
+        if [ -z "$cdstr" ]; then
+            echo >&2 "No parent dir matching '${arg}*' found."
+            return 1
+        fi
+    fi
+
+    builtin cd "$cdstr"
+}
+
+function _up_complete
+{
+    local cur prev opts dir
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    if [ -n "$cur" ]; then
+        cur=$(eval "echo ${cur}")
+        dir="${PWD##/}"
+        opts="${dir//\//\/$'\n'}"
+        #opts=$(echo "$(dirname ${PWD##/})" | tr "/" "/\n")
+        local IFS=$'\n'
+        COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+        # Do escaping
+        if [ ${#COMPREPLY[@]} = 1 ]; then
+            COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
+        else
+            for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+                COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+            done
+        fi
+        return 0
+    fi
+}
+complete -F _up_complete up
+complete -F _up_complete -
+
+# changing directory
+alias ..='up'
+alias cd..='up 1'
+alias -- -='up'
+alias -- --='up 2'
+alias -- ---='up 3'
+alias -- ----='up 4'
+alias -- -----='up 5'
+alias -- ------='up 6'
+
+function mkcd {
+    [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' alread exists"
+    mkdir -p "$1" && cd "$1"
+}
+
+#---------[ ALIASES ]----------------------------------------------------------
+
+# delete vim backup files
+#alias   rmbak='rm *~ .[A-Za-z]*~'
+rmbak()
+{
+    typeset opt OPTIND OPTARG depth="-maxdepth 1" action="-delete"
+    while getopts ":rn" opt; do
+        case "$opt" in
+            r) depth='' ;;
+            n) action='' ;;
+            "?")
+                echo >&2 "Invalid option: -$OPTARG"
+                echo >&2 "USAGE: rmbak [-rn]"
+                echo >&2 "  -r recursive"
+                echo >&2 "  -n print files but don't delete"
+                return 1
+                ;;
+        esac
+    done
+    find . $depth -name \*~ -type f -print $action
+}
+
+
+# delete core and java core files
+alias   rmcore='rm core core.*.dmp Snap.*.trc javacore.*.txt heapdump.*.phd'
+
+# locate using local locatedb
+alias   llocate='locate -d "$HOME/.locatedb"'
+alias   olocate='locate -d "$HOME/OLD-PC/rks/.locatedb"'
+
+jllocate()
+{
+    llocate "$(echo "$1" | sed "s%\.%/%g;s%/java$%.java%")"
+}
+
+#alias fq="readlink -f"
+if type off-readlink >/dev/null 2>&1; then
+    alias fq="readlink -f"
+else
+    function fq
+    {
+        local arg
+        for arg in "$@"; do
+            if [ -d "$arg" ]; then
+                (cd "$arg" && pwd)
+                [ $? -ne 0 ] && return 1
+            else
+                (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")")
+                [ $? -ne 0 ] && return 1
+            fi
+        done
+        return 0
+    }
+fi
+
+function fqc
+{
+    #fq "$@" | xclip -f -selection clipboard
+    local f="$(fq "$@")"
+    printf "%s" "$f" | xclip -selection clipboard
+    echo "$f"
+}
+
+#alias clipboard="xclip -selection clipboard"
+
+function clipboard
+{
+    if [ $# -gt 0 ]; then
+        echo -n "$@" | xclip -f -selection clipboard
+        echo
+    else
+        xclip -f -selection clipboard
+    fi
+}
+
+
+# this and that
+# alias   fixtty='printf "\e[?2004l";stty sane'
+alias   fixtty='reset; stty sane; tput rs1; clear; echo -e "\033c"'
+alias   cls='tput clear'
+alias   qenv='set|grep -i -E'
+alias   cp='cp -i'
+alias   md='mkdir'
+
+alias stop-ultrabay="sudo /usr/local/sbin/ultrabay_eject"
+
+if type xdg-open &>/dev/null; then
+    #alias uff=xdg-open
+    UFF_CMD=xdg-open
+elif type gnome-open &>/dev/null; then
+    #alias uff=gnome-open
+    UFF_CMD=gnome-open
+elif type open &>/dev/null; then
+    #alias uff=open
+    UFF_CMD=open
+elif type mimeopen &>/dev/null; then
+    #function uff
+    #{
+    #    mimeopen "$@" &
+    #}
+    UFF_CMD=mimeopen
+fi
+
+if [ -n "$UFF_CMD" ]; then
+# Shortcut to open files/directories
+#  -- bin halt en Roihess
+function uff
+{
+    case $# in
+        0) echo >&2 "Usage: uff file [file...]"
+            return 1
+            ;;
+        1)
+            "$UFF_CMD" "$1"
+            ;;
+        *)
+            for f in "$@"; do
+                uff "$f"
+            done
+            ;;
+    esac
+}
+else
+    function uff
+    {
+        echo >&2 ""
+        echo >&2 "  No tool for opening files found -- sorry"
+        echo >&2 ""
+        return 1
+    }
+fi
+
+
+alias gop='gnome-open'
+
+# user
+alias   all="who | cut -d' ' -f1"
+alias   who="who -uH"
+
+# processes
+alias   p='ps -ef|grep -v grep|grep '
+alias   j='jobs -l'
+
+# listing files
+if [ -n "$LS_COLORS" ]; then
+    alias ls='ls --color=auto'
+fi
+alias   l.='ls -dF .[!.]*'   # list hidden files only
+alias   ls.='ls -dF .[!.]*'  # list hidden files only
+alias   ll.='ls -dlF .[!.]*' # list hidden files only
+alias   ll='ls -lF'          # list in long format
+alias   dir='ls -lF'         # list in long format
+alias   ltr='ls -ltr'
+alias   lsr='ls -lSr'
+
+ff()
+{
+    if [ $# -ne 1 ]; then
+        echo "Usage: ff <filepattern>"
+        return 1
+    fi
+    length=$(($#-1))
+    searchDirs=( "${@:1:$length}" )
+    name="${!#}"
+
+    if [ ${#searchDirs[@]} -eq 0 ]; then
+        find . -iname "$name"
+   else
+        find "${searchDirs[@]}" -iname "$name"
+   fi
+}
+#alias   ff='find . -iname'
+
+#ffg -i hallo *.vim
+ffg()
+{
+    if [ $# -lt 2 ]; then
+        echo "Usage: ffg <grep-parammeter> <filepattern>"
+        return 1
+    fi
+    length=$(($#-1))
+    grepargs=( "${@:1:$length}" )
+    fn="${!#}"
+
+    find . -iname "$fn" -exec grep "${grepargs[@]}" {} /dev/null \;
+}
+
+# AIX stuff
+#alias   lsx='li -Ox'          # list executables
+#alias   llx='li -l -Ox'
+#alias   lsd='li -Od'          # list directories
+#alias   lld='li -l -Od'
+
+# size of subdirs, sorted by size.
+function dud {
+    local fmt=( '--format=%9f' )
+    if [[ "$1" == "-h" ]]; then
+        shift
+        fmt=( '--to=iec' '--format=%7.1f' )
+    fi
+    du -b --max-depth=1 "${@:-.}" | numfmt "${fmt[@]}" | sort -h
+}
+
+
+# lists the 25 biggest files recursively (doesn't change device)
+function lsmax {
+    local fmt=( '--format=%9f' )
+    if [[ "$1" == "-h" ]]; then
+        shift
+        fmt=( '--to=iec' '--format=%7.1f' )
+    fi
+
+    find "${@:-.}" -xdev -type f -printf "%s %p\n" | numfmt "${fmt[@]}" | sort -h | tail -25
+}
+
+# list directories
+alias lsd='lsFgrep "/"'
+alias lld='ls --color=always -lAF | grep --color=never "/$"'
+# list executables
+alias lsx='lsFgrep "*"'
+alias llx='ls --color=always -laF | grep --color=never "\\*"'
+
+# Spaltenweise Ausgabe für gefilterte ls-Ausgabe
+function lsFgrep {
+    local pat
+    pat=$1
+    shift
+    sh <<__EOF__
+    export COLS=$(tput cols)
+    ls -F $* |
+    awk -v "tc=$pat" '
+    BEGIN {
+        maxLen=0;
+        dirCount = 0;
+    }
+    {
+        if(index(\$0, tc) == length(\$0)) {
+            d=\$0;
+            dirs[dirCount] = \$0;
+            dirCount++;
+            if(length(d) > maxLen) {
+                maxLen = length(d);
+            }
+        }
+    }
+
+    END {
+        cols=ENVIRON["COLS"];
+
+        plen = maxLen + 2;
+
+        tabCols = int(cols / plen);
+        if(tabCols == 0) {
+            tabCols = 1;
+            plen=1;
+        }
+        tabLines = int(dirCount / tabCols);
+        if(tabLines != (dirCount / tabCols)) {
+            tabLines++;
+        }
+
+        #print "DirCont:  " dirCount;
+        #print "MaxLen:   " maxLen;
+        #print "Cols:     " cols;
+        #print "TabCols:  " tabCols;
+        #print "TabLines: " tabLines;
+
+        if(dirCount > 0) {
+            for (i=0; i<tabLines; i++) {
+                for(y=0; y < tabCols && (i + (y*tabLines)) < dirCount; y++) {
+                    idx=i + (y*tabLines);
+                    printf("%-" plen "s", dirs[idx]);
+                }
+                print "";
+            }
+        }
+        else {
+            system("echo Nothing found >&2");
+        }
+    }'
+__EOF__
+
+}
+
+
+#---- Functions ----------------------------------------------------------------
+
+if type vimpager >/dev/null 2>&1; then
+    export PAGER=vimpager
+else
+    function man
+    {
+        vim -c "runtime! ftplugin/man.vim"  -c "Man $*" -c only
+        #_MAN_TMP=/tmp/man.tmp.$$
+        #/usr/bin/man $* | sed "s/.//g" > $_MAN_TMP
+        #[ -s $_MAN_TMP ] && vim -v $_MAN_TMP
+        #rm -f $_MAN_TMP
+
+    }
+fi
+
+
+[ "$BASH_DEBUG" = "FULL" ] && set +x
+[ -n "$BASH_DEBUG" ]       && echo End sourcing .aliases
+true   # i want rc==0 even if BASH_DEBUG is not set!
+
+# vim: ft=sh:

@@ -1,0 +1,10 @@
+#
+# FILE: .bash_completion
+#
+# ABSTRACT: Personal programmable completion functions for bash
+#
+# AUTHOR: Ralf Schandl
+#
+
+#complete -f -o plusdirs -X '!*.@(7z|arj|bz2|gz|xz|cpio|deb|iso|rar|tar|zip|ear|jar|war|zoo|t?(ar.)@(lz?(ma)|xz|bz2|gz|7z))' ext
+

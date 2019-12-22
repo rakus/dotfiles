@@ -1,0 +1,8 @@
+
+set incsearch
+set autochdir
+set scrolloff=4
+set shiftwidth=4
+set shiftround
+set et
+

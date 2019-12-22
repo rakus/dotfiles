@@ -1,0 +1,37 @@
+# Set via environment variables
+#[user]
+#	name =
+#	email =
+[diff]
+	tool = vimdiff
+	guitool = meld
+
+[alias]
+    #treediff = difftool --dir-diff --tool=meld
+    gdiff = difftool -g -y
+    vdiff = difftool -t vimdiff -y
+    tree = log --graph --decorate --pretty=oneline --abbrev-commit --all
+    #treediff = difftool --dir-diff -g
+    dirdiff = difftool --dir-diff -g
+    #pushdev = !git push mym-development "$(git rev-parse --abbrev-ref HEAD)"
+    fetchall = fetch --all --prune
+    weg = !git clean -fxd && git reset --hard
+    new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
+    incoming = !git fetch && git log --oneline ..@{u}
+
+[core]
+    pager = less -R
+
+[color]
+	ui = true
+
+[push]
+	default = simple
+
+[core]
+	excludesfile = /home/rks/.gitignore
+
+
+[filesystem "Private Build|1.8.0_222|/dev/mapper/ubuntu--gnome--vg-root"]
+	timestampResolution = 1001 microseconds
+	minRacyThreshold = 6364 microseconds

@@ -1,0 +1,29 @@
+
+set enable-bracketed-paste off
+
+# VI is the way to go.
+set editing-mode vi
+
+# Ctrl-Up: Search backward through the history for the string of characters
+# between  the start of the current line and the point.  This is a
+# non-incremental search.
+"\e[A": history-search-backward
+
+# Down: Search backward through the history for the string of characters
+# between  the start of the current line and the point.  This is a
+# non-incremental search.
+"\e[B": history-search-forward
+
+
+
+$if mode=vi
+# Do VI mode mapping
+set keymap vi-command
+"k": history-search-backward
+"j": history-search-forward
+
+set keymap vi-insert
+"\C-l": "\e0C"
+#"\C-a": "\eBi\"\eEa\""
+$endif
+
