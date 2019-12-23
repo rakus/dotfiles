@@ -9,6 +9,8 @@
 umask 022
 #umask 077
 
+. /etc/profile
+
 export GDK_NATIVE_WINDOWS=1
 
 EDITOR=vim

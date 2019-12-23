@@ -2,6 +2,24 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+# I never tought I would miss Ubuntu...
+if [ -e "/etc/os-release" ] && grep -i Fedora "/etc/os-release" &>/dev/null; then
+    ITS_FEDORA="true"
+fi
+
+# for Fedora ...
+if [[ $ITS_FEDORA = "true" ]]; then
+    for i in /etc/profile.d/*.sh; do
+        if [ -r "$i" ]; then
+            if [ "$PS1" ]; then
+                . "$i"
+            else
+                . "$i" >/dev/null
+            fi
+        fi
+    done
+fi
+
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
@@ -136,18 +154,6 @@ if [ $SHLVL -gt 1 ]; then
     PS1="[$SHLVL]$PS1"
 fi
 
-
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    # Set the title of the terminal
-    #PROMPT_COMMAND='echo -ne "\033]2;${PWD/\/home\/rks/~}\007"'
-    #PROMPT_COMMAND='echo -en "\033]2;${PWD/#$HOME/\~}\007"'
-    #PROMPT_COMMAND='if [ $? = 0 ]; then nClr="$defClr"; else nClr="43;31";fi;echo -en "\033]2;${PWD/#$HOME/\~}\007"'
-    ;;
-*)
-    ;;
-esac
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -287,5 +293,6 @@ true
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 # added by travis gem
-[ -f /home/rks/.travis/travis.sh ] && source /home/rks/.travis/travis.sh
+[ -f $HOME/.travis/travis.sh ] && source $HOME/.travis/travis.sh
 
+true

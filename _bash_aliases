@@ -16,6 +16,10 @@ alias wim='ssh special@9.2.122.252'
 
 alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N'
 
+if [[ $ITS_FEDORA = "true" ]]; then
+    alias vim=vimx
+fi
+
 # list my local git repos
 function gitrepos
 {
