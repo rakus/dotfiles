@@ -103,7 +103,7 @@ esac
 #
 getTermTitle()
 {
-    if [ -n "$MANUAL_TERMINAL_TITLE" ]; then
+    if [ -n "${MANUAL_TERMINAL_TITLE:-}" ]; then
         echo "$MANUAL_TERMINAL_TITLE"
     else
         echo "$1"

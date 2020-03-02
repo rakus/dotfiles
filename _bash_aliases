@@ -5,6 +5,8 @@
 #  Ralf Schandl
 #
 ################################################################################
+#
+# shellcheck shell=bash
 
 [ -n "$BASH_DEBUG" ] &&       echo Start sourcing .aliases
 [ "$BASH_DEBUG" = "FULL" ] && set -x
@@ -12,19 +14,17 @@
 
 alias wlanreset="sudo killall wpa_supplicant"
 
-alias wim='ssh special@9.2.122.252'
-
 alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N'
 
-if [[ $ITS_FEDORA = "true" ]]; then
-    alias vim=vimx
-fi
+#if [[ $ITS_FEDORA = "true" ]]; then
+#    alias vim=vimx
+#fi
 
 # list my local git repos
 function gitrepos
 {
     (
-    cd "$HOME/Documents/Privat/diskstation/gitolite-admin"
+    cd "$HOME/Documents/Privat/diskstation/gitolite-admin" || return 1
     remote=$(git remote -v | head -1 | cut -d $'\t' -f2 | cut -d: -f1)
     grep repo < conf/gitolite.conf | sed "s/^.* /${remote}:/"
     )
@@ -51,7 +51,7 @@ function calc
 function exist_filter
 {
     local d
-    while read d; do
+    while read -r d; do
         [[ -e $d ]] && echo "$d"
     done
 }
@@ -61,7 +61,7 @@ function exist_filter
 function dir_filter
 {
     local d
-    while read d; do
+    while read -r d; do
         [[ -d "$d" ]] && echo "$d"
     done
 }
@@ -71,7 +71,7 @@ function dir_filter
 function file_filter
 {
     local f
-    while read f; do
+    while read -r f; do
         [[ -f "$f" ]] && echo "$f"
     done
 }
@@ -79,7 +79,7 @@ function file_filter
 function exe_filter
 {
     local f
-    while read f; do
+    while read -r f; do
         [[ -f "$f" ]] && [[ -x "$f" ]] && echo "$f"
     done
 }
@@ -90,7 +90,7 @@ function exe_filter
 function ts_prefix
 {
     local l
-    while read l; do
+    while read -r l; do
         echo "$(date "+%Y-%m-%dT%H:%M:%S.%03N"): $l"
     done
 }
@@ -99,7 +99,8 @@ function ts_prefix
 esc_filter()
 {
     local l
-    while read l; do
+    while read -r l; do
+        # shellcheck disable=SC2001
         echo "$l" | sed "s/\x1B\[[^A-Za-z]*[A-Za-z]//g"
     done
 }
@@ -108,7 +109,7 @@ esc_filter()
 color_filter()
 {
     local l
-    while read l; do
+    while read -r l; do
         echo "$l" |  sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,3})?)?[m|K]//g"
     done
 }
@@ -116,9 +117,9 @@ color_filter()
 numbered()
 {
     local i=1
-    while read l; do
+    while read -r l; do
         printf "%6d\t%s\n" $i "$l"
-        let i+=1
+        (( i+=1 ))
     done
 }
 
@@ -164,6 +165,7 @@ function mc
     if test -r "$MC_PWD_FILE"; then
         MC_PWD="$(cat "$MC_PWD_FILE")"
         if test -n "$MC_PWD" && test -d "$MC_PWD"; then
+            # shellcheck disable=SC2164
             cd "$MC_PWD"
         fi
         unset MC_PWD
@@ -196,7 +198,7 @@ function cd
 {
     typeset OPTIND OPTARG dir o EL PE E AT
 
-    while getopts "LPE@" o "$@"; do
+    while getopts "LPe@" o "$@"; do
         case $o in
             L) EL=true
                 ;;
@@ -237,6 +239,7 @@ function cd
         fi
     fi
 
+    # shellcheck disable=SC2164
     builtin cd ${EL+-L} ${PE+-P} ${E+-e} ${AT+-@} "$dir"
 }
 
@@ -253,7 +256,7 @@ function up
     typeset arg cdstr
     arg=${1:-1}
     if [ -z "${arg//[0-9]/}" ]; then
-        cdstr=$(printf '%0.s../' $(seq 1 $arg))
+        cdstr=$(printf '%0.s../' $(seq 1 "$arg"))
     else
         arg="${arg##/}"
         if [[ "$arg" = */ ]]; then
@@ -268,6 +271,7 @@ function up
         fi
     fi
 
+    # shellcheck disable=SC2164
     builtin cd "$cdstr"
 }
 
@@ -285,13 +289,9 @@ function _up_complete
         local IFS=$'\n'
         COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
         # Do escaping
-        if [ ${#COMPREPLY[@]} = 1 ]; then
-            COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
-        else
-            for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-                COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
-            done
-        fi
+        for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+            COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+        done
         return 0
     fi
 }
@@ -310,6 +310,7 @@ alias -- ------='up 6'
 
 function mkcd {
     [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' alread exists"
+    # shellcheck disable=SC2164
     mkdir -p "$1" && cd "$1"
 }
 
@@ -358,11 +359,9 @@ else
         local arg
         for arg in "$@"; do
             if [ -d "$arg" ]; then
-                (cd "$arg" && pwd)
-                [ $? -ne 0 ] && return 1
+                (cd "$arg" && pwd) || return 1
             else
-                (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")")
-                [ $? -ne 0 ] && return 1
+                (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")") || return 1
             fi
         done
         return 0
@@ -372,7 +371,8 @@ fi
 function fqc
 {
     #fq "$@" | xclip -f -selection clipboard
-    local f="$(fq "$@")"
+    local f
+    f="$(fq "$@")"
     printf "%s" "$f" | xclip -selection clipboard
     echo "$f"
 }

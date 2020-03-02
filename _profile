@@ -3,6 +3,8 @@
 # exists.
 # see /usr/share/doc/bash/examples/startup-files for examples.
 # the files are located in the bash-doc package.
+#
+# shellcheck shell=sh
 
 # the default umask is set in /etc/profile; for setting the umask
 # for ssh logins, install and configure the libpam-umask package.
@@ -38,16 +40,20 @@ export LC_ALL=
 
 if [ -f "$HOME/.profile_private" ]; then
     # Must export USER_FULL_NAME & USER_FULL_NAME (used blow)
-    . "$HOME/.profile_private" ]
+    . "$HOME/.profile_private"
 fi
 
-# this variable is used by the eclipse plugin fullusername
-export ECLIPSE_AUTHOR="$USER_FULL_NAME"
+if [ -n "$USER_FULL_NAME" ]; then
+    # this variable is used by the eclipse plugin fullusername
+    export ECLIPSE_AUTHOR="$USER_FULL_NAME"
+fi
 
-export GIT_AUTHOR_NAME="$USER_FULL_NAME"
-export GIT_COMMITTER_NAME="$USER_FULL_NAME"
-export GIT_COMMITTER_EMAIL="$USER_EMAIL"
-export GIT_AUTHOR_EMAIL="$USER_EMAIL"
+#if [ -n "$USER_FULL_NAME" ] && [ -n "$USER_EMAIL" ]; then
+#    export GIT_AUTHOR_NAME="$USER_FULL_NAME"
+#    export GIT_COMMITTER_NAME="$USER_FULL_NAME"
+#    export GIT_COMMITTER_EMAIL="$USER_EMAIL"
+#    export GIT_AUTHOR_EMAIL="$USER_EMAIL"
+#fi
 
 
 # if running bash
@@ -58,6 +64,9 @@ if [ -n "$BASH_VERSION" ]; then
     fi
 fi
 
+if [ -d "/opt/vim/bin" ] ; then
+    PATH="/opt/vim/bin:$PATH"
+fi
 # set PATH so it includes user's private bin if it exists
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
