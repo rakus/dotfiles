@@ -16,10 +16,6 @@ alias wlanreset="sudo killall wpa_supplicant"
 
 alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N'
 
-#if [[ $ITS_FEDORA = "true" ]]; then
-#    alias vim=vimx
-#fi
-
 # list my local git repos
 function gitrepos
 {
@@ -194,7 +190,8 @@ function ght
 # 'cd sr ma ja' does 'cd sr*/ma*/ja*'
 # If multiple matches uses select.
 #
-function cd
+alias cd=cd_wc
+function cd_wc
 {
     typeset OPTIND OPTARG dir o EL PE E AT
 
@@ -222,9 +219,8 @@ function cd
         dir="$1"
     else
         typeset dirPattern=$(printf "%q*/" "$@" | sed 's%\\\*%*%g;s%/\*/%/%g;s%///*%/%g')
-        typeset IFS=$'\n'
-        typeset -a dirs=( $(ls -d ${dirPattern} 2>/dev/null) )
-        unset IFS
+        # shellcheck disable=SC2086 # dirpattern unquoted due to wildcards
+        mapfile -d$'\n' -t dirs < <(ls -d ${dirPattern} 2>/dev/null)
         if [ ${#dirs[@]} -eq 0 ]; then
             echo >&2 "cd: $dirPattern: No such directory"
             return 1
@@ -254,6 +250,10 @@ function cd
 function up
 {
     typeset arg cdstr
+    if [ $# -gt 1 ]; then
+        echo >&2 "To many arguments."
+        return 1
+    fi
     arg=${1:-1}
     if [ -z "${arg//[0-9]/}" ]; then
         cdstr=$(printf '%0.s../' $(seq 1 "$arg"))
@@ -266,7 +266,7 @@ function up
         fi
         cdstr=$(pwd | grep -o "^.*/${arg}/")
         if [ -z "$cdstr" ]; then
-            echo >&2 "No parent dir matching '${arg}*' found."
+            echo >&2 "No parent dir matching '${arg//\[*/*}' found."
             return 1
         fi
     fi
@@ -277,17 +277,14 @@ function up
 
 function _up_complete
 {
-    local cur prev opts dir
+    local cur opts dir
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
     if [ -n "$cur" ]; then
         cur=$(eval "echo ${cur}")
         dir="${PWD##/}"
         opts="${dir//\//\/$'\n'}"
-        #opts=$(echo "$(dirname ${PWD##/})" | tr "/" "/\n")
-        local IFS=$'\n'
-        COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+        mapfile -d$'\n' -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
         # Do escaping
         for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
             COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
@@ -309,7 +306,7 @@ alias -- -----='up 5'
 alias -- ------='up 6'
 
 function mkcd {
-    [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' alread exists"
+    [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' already exists"
     # shellcheck disable=SC2164
     mkdir -p "$1" && cd "$1"
 }
@@ -329,7 +326,7 @@ rmbak()
                 echo >&2 "Invalid option: -$OPTARG"
                 echo >&2 "USAGE: rmbak [-rn]"
                 echo >&2 "  -r recursive"
-                echo >&2 "  -n print files but don't delete"
+                echo >&2 "  -n dry-run - print files but don't delete"
                 return 1
                 ;;
         esac

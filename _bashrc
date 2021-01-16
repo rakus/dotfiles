@@ -1,24 +1,13 @@
+# shellcheck shell=bash
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
-# I never tought I would miss Ubuntu...
-if [ -e "/etc/os-release" ] && grep -i Fedora "/etc/os-release" &>/dev/null; then
-    ITS_FEDORA="true"
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
 fi
 
-# for Fedora ...
-if [[ $ITS_FEDORA = "true" ]]; then
-    for i in /etc/profile.d/*.sh; do
-        if [ -r "$i" ]; then
-            if [ "$PS1" ]; then
-                . "$i"
-            else
-                . "$i" >/dev/null
-            fi
-        fi
-    done
-fi
 
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
@@ -172,7 +161,7 @@ fi
 
 #---------[ Update the PATH ]--------------------------------------------------
 
-function checkPath()
+function cleanupPath()
 {
     typeset p tPath=""
     typeset IFS=':'
@@ -190,7 +179,7 @@ function checkPath()
         fi
     done
     unset IFS
-    PATH=$(echo ":$tPath:" | sed 's%:::*%%g;s%^::*%%;s%::*$%%')
+    PATH=$(echo ":$tPath:" | sed 's%:::*%:%g;s%^::*%%;s%::*$%%')
 }
 
 function addToPath()
@@ -198,13 +187,13 @@ function addToPath()
     local dir
     dir=$(readlink -f "$1")
     if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
-        export PATH="$PATH:$dir"
+        PATH="$PATH:$dir"
     fi
 }
 
 PATH="${HOME}/bin:${HOME}/local/bin:$PATH"
 
-if which ruby >/dev/null && which gem >/dev/null; then
+if command -v ruby >/dev/null 2>&1 && command -v gem >/dev/null 2>&1; then
     addToPath "$(ruby -e 'puts Gem.user_dir')/bin"
 fi
 
@@ -213,7 +202,17 @@ if [ -n "$JAVA_HOME" ]; then
     addToPath "$JAVA_HOME/bin"
 fi
 
-checkPath
+# Cleanup path for Fedora
+if [ "$(readlink -f /bin)" = "/usr/bin" ]; then
+    PATH="$(echo ":$PATH:" | sed 's|:/usr/bin:|:/bin:|g')"
+fi
+if [ "$(readlink -f /sbin)" = "/usr/sbin" ]; then
+    PATH="$(echo ":$PATH:" | sed 's|:/usr/sbin:|:/sbin:|g')"
+fi
+
+cleanupPath
+
+export PATH
 
 # add local man directories if they exist
 if [ -d "$HOME/man" ]; then
@@ -242,25 +241,6 @@ fi
 export EDITOR=vi
 export VISUAL=vim
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if [ -z "$BASH_COMPLETION" ] && ! shopt -oq posix; then
-    if [ -f /etc/bash_completion ]; then
-        . /etc/bash_completion
-    fi
-    if [ -f ${HOME}/.bash_completion ]; then
-        . ${HOME}/.bash_completion
-    fi
-    if [ -f ${HOME}/.was-completion.bash ]; then
-        . ${HOME}/.was-completion.bash
-    fi
-    if [ -f ${HOME}/.maven-completion.bash ]; then
-        . ${HOME}/.maven-completion.bash
-    fi
-fi
-
-
 # disable CapsLock
 #xmodmap -e "remove lock = Caps_Lock"
 
@@ -281,7 +261,12 @@ if [ ! -d "$GOPATH" ]; then
 fi
 addToPath "$GOPATH/bin"
 
-[ -f "$HOME/.quick_change_dir" ] && . $HOME/.quick_change_dir
+if [ -f "$HOME/.qc/quick_change_directory.sh" ]; then
+    . "$HOME/.qc/quick_change_directory.sh"
+elif [ -f "$HOME/.quick_change_dir" ]; then
+    . "$HOME/.quick_change_dir"
+fi
+
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -293,6 +278,6 @@ true
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 # added by travis gem
-[ -f $HOME/.travis/travis.sh ] && source $HOME/.travis/travis.sh
+[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
 
 true

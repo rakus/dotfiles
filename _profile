@@ -39,7 +39,7 @@ export LC_IDENTIFICATION=de_DE.utf8
 export LC_ALL=
 
 if [ -f "$HOME/.profile_private" ]; then
-    # Must export USER_FULL_NAME & USER_FULL_NAME (used blow)
+    # Must export USER_FULL_NAME & USER_EMAIL (used below)
     . "$HOME/.profile_private"
 fi
 

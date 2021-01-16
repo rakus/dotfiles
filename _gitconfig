@@ -1,7 +1,9 @@
-# Set via environment variables
-#[user]
-#	name =
-#	email =
+[user]
+    # Set repository local
+    # name =
+    # email =
+    useConfigOnly = true
+
 [diff]
 	tool = vimdiff
 	guitool = meld
@@ -23,15 +25,16 @@
     pager = less -R
 
 [color]
-	ui = true
+    ui = true
 
 [push]
-	default = simple
+    default = simple
 
 [core]
-	excludesfile = /home/rks/.gitignore
+    excludesfile = /home/rks/.gitignore
+    whitespace = -blank-at-eof
 
-
-[filesystem "Private Build|1.8.0_222|/dev/mapper/ubuntu--gnome--vg-root"]
-	timestampResolution = 1001 microseconds
-	minRacyThreshold = 6364 microseconds
+[init]
+    templatedir = ~/.rks-setup/git-templates
+[gui]
+	fontui = -family \"DejaVu Sans\" -size 12 -weight normal -slant roman -underline 0 -overstrike 0
