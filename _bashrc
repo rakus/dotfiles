@@ -3,10 +3,17 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+
+#PS4='+ $(date "+%s.%N")\011 '
+#exec 3>&2 2>/tmp/bashstart.log
+#set -x
+
+
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
+
 
 
 # If not running interactively, don't do anything
@@ -16,15 +23,17 @@ if [ "$(printf "%d" "'A")" -eq 193 ]; then
     export EBCDIC=true
 fi
 
+
 # are we running in guake terminal?
 # Used in VIM configuration
-GPARENT="$(pstree -as $$)"
-if echo "$GPARENT" | grep -q "guake.main"; then
-    export GUAKE=true
-else
-    unset GUAKE
-fi
-unset GPARENT
+#GPARENT="$(pstree -as $$)"
+#if echo "$GPARENT" | grep -q "guake.main"; then
+#    export GUAKE=true
+#else
+#    unset GUAKE
+#fi
+#unset GPARENT
+
 
 #if [ $(umask) != "0077" ]; then
 #    echo "============================================="
@@ -53,6 +62,7 @@ shopt -s histappend
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 export HISTSIZE=2000
 export HISTFILESIZE=2000
+
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -153,6 +163,7 @@ if [ -x /usr/bin/dircolors ]; then
     fi
 fi
 
+
 if [ "$COLOR_SUPPORTED" = "yes" ]; then
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
@@ -160,27 +171,6 @@ if [ "$COLOR_SUPPORTED" = "yes" ]; then
 fi
 
 #---------[ Update the PATH ]--------------------------------------------------
-
-function cleanupPath()
-{
-    typeset p tPath=""
-    typeset IFS=':'
-    for p in $PATH; do
-        if [ -z "$p" ]; then
-            : #echo >&2 "INFO: Empty PATH entry removed"
-        elif echo ":$tPath:" | grep ":$p:" >/dev/null; then
-            : #echo >&2 "INFO: Duplicate PATH entry removed: $p"
-        elif [ "${p:0:1}" != "/" ]; then
-            : #echo >&2 "INFO: Relative PATH entry removed: $p"
-        elif [ ! -d "$p" ]; then
-            : #echo >&2 "INFO: Not existing PATH entry removed: $p"
-        else
-            tPath="${tPath}:$p"
-        fi
-    done
-    unset IFS
-    PATH=$(echo ":$tPath:" | sed 's%:::*%:%g;s%^::*%%;s%::*$%%')
-}
 
 function addToPath()
 {
@@ -191,26 +181,10 @@ function addToPath()
     fi
 }
 
-PATH="${HOME}/bin:${HOME}/local/bin:$PATH"
-
-if command -v ruby >/dev/null 2>&1 && command -v gem >/dev/null 2>&1; then
-    addToPath "$(ruby -e 'puts Gem.user_dir')/bin"
-fi
-
 # Add JAVA_HOME to path if it exists
 if [ -n "$JAVA_HOME" ]; then
     addToPath "$JAVA_HOME/bin"
 fi
-
-# Cleanup path for Fedora
-if [ "$(readlink -f /bin)" = "/usr/bin" ]; then
-    PATH="$(echo ":$PATH:" | sed 's|:/usr/bin:|:/bin:|g')"
-fi
-if [ "$(readlink -f /sbin)" = "/usr/sbin" ]; then
-    PATH="$(echo ":$PATH:" | sed 's|:/usr/sbin:|:/sbin:|g')"
-fi
-
-cleanupPath
 
 export PATH
 
@@ -221,12 +195,6 @@ fi
 if [ -d "$HOME/local/man" ]; then
     export MANPATH="$MANPATH:$HOME/local/man"
 fi
-
-# Add ANT to path if it exists
-#ANT_PATH=/home/de104908/local/share/apache-ant-1.6.2/
-#test -d $ANT_PATH && MyPath=$MyPath:$ANT_PATH
-#
-
 
 #---------[ Includes ]---------------------------------------------------------
 # Alias definitions.
@@ -244,23 +212,11 @@ export VISUAL=vim
 # disable CapsLock
 #xmodmap -e "remove lock = Caps_Lock"
 
-#
-# Workaround for GNOME-Terminal bug.
-# With this a new tab is opened with the same directory as the current tab.
-#if [ -n "$GUAKE" ]; then
-#    source /etc/profile.d/vte-2.91.sh
-#fi
-
 # if [[ -z "$GDK_NATIVE_WINDOWS" ]]; then
 #     export GDK_NATIVE_WINDOWS=1
 # fi
 
-export GOPATH=$HOME/code/go
-if [ ! -d "$GOPATH" ]; then
-    mkdir -p "$GOPATH"
-fi
-addToPath "$GOPATH/bin"
-
+export QC_FZF=true
 if [ -f "$HOME/.qc/quick_change_directory.sh" ]; then
     . "$HOME/.qc/quick_change_directory.sh"
 elif [ -f "$HOME/.quick_change_dir" ]; then
@@ -268,16 +224,16 @@ elif [ -f "$HOME/.quick_change_dir" ]; then
 fi
 
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-true
-
-
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+#export NVM_DIR="$HOME/.nvm"
+#[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+#[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # added by travis gem
-[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
+#[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
+
+[ -f  /usr/share/fzf/shell/key-bindings.bash ] && source /usr/share/fzf/shell/key-bindings.bash
+
+#set +x
+#exec 2>&3 3>&-
 
 true

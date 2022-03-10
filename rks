@@ -9,39 +9,35 @@
 #
 # AUTHOR: Ralf Schandl
 #
+# shellcheck shell=bash
 
 RKS_VERSION=1
 
 case $- in
-	*i*)
-		echo ""
-		echo "Moin Moin"
-		echo ""
-		;;
+    *i*)
+        echo ""
+        echo "Moin Moin"
+        echo ""
+        ;;
 esac
 
-if [ -n "$BASH_VERSION" ]; then
-	IS_BASH=TRUE
-	BUILTIN=builtin
-	shopt -s checkwinsize
-elif [ -n "${KSH_VERSION}" ]; then
-	# ksh93 only?
-	IS_KSH=TRUE
+if [ -n "${BASH_VERSION:-}" ]; then
+    IS_BASH=TRUE
+    BUILTIN=builtin
+    shopt -s checkwinsize
+elif [ -n "${KSH_VERSION:-}" ]; then
+    # ksh93 only?
+    IS_KSH=TRUE
 else
-	echo >&2 ""
-	echo >&2 "WARNING: Neither BASH nor KSH93 detected - Good luck!"
-	echo >&2 ""
+    echo >&2 ""
+    echo >&2 "WARNING: Neither BASH nor KSH93 detected - Good luck!"
+    echo >&2 ""
 fi
 
-case "$(uname -s | tr 'A-Z' 'a-z')" in
-	*cygwin*) IS_CYGWIN=TRUE ;;
-	*msys*) IS_MSYS=TRUE ;;
+case "$(uname -s | tr '[:upper:]' '[:lower:]')" in
+    *cygwin*) IS_CYGWIN=TRUE ;;
+    *msys*) IS_MSYS=TRUE ;;
 esac
-
-# Variables holding special chars
-ESC=$(printf '\033')
-BEL=$(printf '\007')
-NL=$(printf '\n')
 
 #---------[ History ]----------------------------------------------------------
 # Show timestamp with commands when calling history
@@ -52,29 +48,29 @@ export HISTSIZE=2000
 export HISTFILE=${HOME}/.rks_history
 
 if [ "$IS_KSH" ]; then
-	export HISTFILE=${HOME}/.rks_ksh_history
+    export HISTFILE=${HOME}/.rks_ksh_history
 elif [ "$IS_BASH" ]; then
-	export HISTFILE=${HOME}/.rks_bash_history
-	history -r
-	# disable history expansion with !
-	#set +H
+    export HISTFILE=${HOME}/.rks_bash_history
+    history -r
+    # disable history expansion with !
+    #set +H
 fi
 
 gh()
 {
-	HISTTIMEFORMAT='' history | grep "$@" | grep -v "^ *[0-9][0-9]*  ght\\? "| uniq -f1
+    HISTTIMEFORMAT='' history | grep "$@" | grep -v "^ *[0-9][0-9]*  ght\\? "| uniq -f1
 }
 
 
 #---------[ VI command line editing mode ]-------------------------------------
 set -o vi
 if ! grep "^# VERSION:$RKS_VERSION\$" "$HOME/.inputrc.rks" >/dev/null 2>&1; then
-	cat > "$HOME/.inputrc.rks" << EOF
+    cat > "$HOME/.inputrc.rks" << EOF
 # VERSION:$RKS_VERSION
 set enable-bracketed-paste off
 set editing-mode vi
-"\e[A": history-search-backward
-"\e[B": history-search-forward
+"\\e[A": history-search-backward
+"\\e[B": history-search-forward
 \$if mode=vi
 set keymap vi-command
 "k": history-search-backward
@@ -85,26 +81,32 @@ fi
 
 INPUTRC=$HOME/.inputrc.rks
 
+# load my inputrc
+bind -f "$INPUTRC"
+
 #---------[ Prompt ]-----------------------------------------------------------
 PROMPT_HOST=$(hostname|cut -d. -f1)
+ESC=$(printf '\033')
+BEL=$(printf '\007')
+
 
 nClr=32
 pClr=31
 if [  "$IS_BASH" ]; then
-	PS1='\[\033[01;${nClr}m\]($?)\u@\h\[\033[00m\]: \[\033[01;${pClr}m\]\w\[\033[00m\]'$'\n''> '
+    PS1='\[\033[01;${nClr}m\]($?)\u@\h\[\033[00m\]: \[\033[01;${pClr}m\]\w\[\033[00m\]'$'\n''$ '
 else
-	# For !BASH - don't use \[...\]
-	# shellcheck disable=SC2025
-	PS1='${ESC}[01;${nClr}m($?)$(logname)@$PROMPT_HOST${ESC}[00m: ${ESC}[01;${pClr}m$([ "${PWD#$HOME}" != "${PWD}" ] && echo -n "~"; echo ${PWD#$HOME})${ESC}[00m'$'\n''> '
+    # For !BASH - don't use \[...\]
+    # sh ellcheck disable=SC2025
+    PS1='${ESC}[01;${nClr}m($?)$(logname)@$PROMPT_HOST${ESC}[00m: ${ESC}[01;${pClr}m$([ "${PWD#$HOME}" != "${PWD}" ] && echo -n "~"; echo ${PWD#$HOME})${ESC}[00m'$'\n''$ '
 fi
 
 case "$TERM" in
-	xterm*|rxvt*)
-		# Set the title of the terminal
-		PROMPT_COMMAND="echo -ne \"${ESC}]2;\$USER@$PROMPT_HOST:\${PWD/\$HOME/~}${BEL}\""
-		;;
-	*)
-		;;
+    xterm*|rxvt*)
+        # Set the title of the terminal
+        PROMPT_COMMAND="echo -ne \"${ESC}]2;\$USER@$PROMPT_HOST:\${PWD/\$HOME/~}${BEL}\""
+        ;;
+    *)
+        ;;
 esac
 
 #---------[ Path ]-------------------------------------------------------------
@@ -115,20 +117,20 @@ export PATH
 
 function chgLsColor
 {
-	typeset t=$1
-	typeset c=$2
-	typeset lsc
-	if echo "$LS_COLORS" | grep "$t=" >/dev/null; then
-		# doesn't work with ${var/search/replace}
-		# shellcheck disable=SC2001
-		lsc=$(echo "$LS_COLORS" | sed "s/${t}=[0-9;]*:/${t}=${c}:/")
-	else
-		lsc="$LS_COLORS:${t}=${c}:"
-		# doesn't work with ${var/search/replace}
-		# shellcheck disable=SC2001
-		lsc=$(echo "$lsc" | sed "s/:::*/:/g")
-	fi
-	export LS_COLORS=$lsc
+    typeset t=$1
+    typeset c=$2
+    typeset lsc
+    if echo "$LS_COLORS" | grep "$t=" >/dev/null; then
+        # doesn't work with ${var/search/replace}
+        # shellcheck disable=SC2001
+        lsc=$(echo "$LS_COLORS" | sed "s/${t}=[0-9;]*:/${t}=${c}:/")
+    else
+        lsc="$LS_COLORS:${t}=${c}:"
+        # doesn't work with ${var/search/replace}
+        # shellcheck disable=SC2001
+        lsc=$(echo "$lsc" | sed "s/:::*/:/g")
+    fi
+    export LS_COLORS=$lsc
 }
 
 # Directory other writable -> Yellow on Green
@@ -142,7 +144,7 @@ alias gitdiff="git difftool -t vimdiff -y"
 
 # Cygwin might have no clear command - simulate it
 if ! type clear >/dev/null 2>&1; then
-	alias clear="echo -e '\033[2J\033[0;0f'"
+    alias clear="echo -e '\033[2J\033[0;0f'"
 fi
 alias cls=clear
 
@@ -150,75 +152,96 @@ alias ls='ls --color=auto'
 alias ltr="ls -ltr"
 alias ll='ls -l'
 
-# remove all vi-style backup files
-alias rmbak="rm *~ .[A-Za-z]*~"
+# delete vi-style backup files
+#alias   rmbak='rm *~ .[A-Za-z]*~'
+rmbak()
+{
+    typeset opt OPTIND OPTARG depth="-maxdepth 1" action="-delete"
+    while getopts ":rn" opt; do
+        case "$opt" in
+            r) depth='' ;;
+            n) action='' ;;
+            "?")
+                echo >&2 "Invalid option: -$OPTARG"
+                echo >&2 "USAGE: rmbak [-rn]"
+                echo >&2 "  -r recursive"
+                echo >&2 "  -n dry-run - print files but don't delete"
+                return 1
+                ;;
+        esac
+    done
+    find . $depth -name \*~ -type f -print $action
+}
 
 # fully qualified file name
 # no readlink - I don't want to resolve symlinks
 function fq
 {
-	typeset arg
-	for arg in "$@"; do
-		if [ -d "$arg" ]; then
-			(cd "$arg" && pwd) || return 1
-		else
-			(fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")") || return 1
-		fi
-	done
-	return 0
+    typeset arg
+    for arg in "$@"; do
+        if [ -d "$arg" ]; then
+            (cd "$arg" && pwd) || return 1
+        else
+            (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")") || return 1
+        fi
+    done
+    return 0
 }
 
 if [ -n "$IS_CYGWIN" ]; then
-	alias uff=cygstart.exe
+    alias uff=cygstart.exe
 elif [ -n "$IS_MSYS" ]; then
-	alias uff=start
+    alias uff=start
 elif type xdg-open >/dev/null 2>&1; then
-	alias uff=xdg-open
+    alias uff=xdg-open
 elif type mimeopen >/dev/null 2>&1; then
-	function uff
-	{
-		mimeopen "$@" &
-	}
+    function uff
+    {
+        mimeopen "$@" &
+    }
 elif type open >/dev/null 2>&1; then
-	alias uff=open
+    alias uff=open
 elif type mymimeopen >/dev/null 2>&1; then
-	alias uff='mymimeopen -fq'
+    alias uff='mymimeopen -fq'
 else
-	function uff
-	{
-		echo >&2 ""
-		echo >&2 "  No tool for opening files found -- sorry"
-		echo >&2 ""
-		return 1
-	}
+    function uff
+    {
+        echo >&2 ""
+        echo >&2 "  No tool for opening files found -- sorry"
+        echo >&2 ""
+        return 1
+    }
 fi
 
 function __print_size_list {
-	if [ "$1" == "-h" ]; then
-		awk '{sum=$1; giga=(1024*1024*1024);mega=(1024*1024);kilo=(1024);hum[giga]="G";hum[mega]="M";hum[kilo]="K";
-		for (x=giga; x>=1024; x/=1024) {
-			if (sum>=x) {
-				printf "%7.1f%s",sum/x,hum[x];
-				sub(/[0-9]*[ \t]*/,"  ", $0);
-				print $0;
-				break
-			}}
-	}'
-else
-	awk '{printf "%8s", $1; sub(/[0-9]*[ \t]*/,"  ", $0); print $0; }'
-			fi
-		}
+    if [ "$1" == "-h" ]; then
+        awk '{
+        sum=$1; giga=(1024*1024*1024);mega=(1024*1024);kilo=(1024);hum[giga]="G";hum[mega]="M";hum[kilo]="K";
+        for (x=giga; x>=1024; x/=1024) {
+            if (sum>=x) {
+                printf "%7.1f%s",sum/x,hum[x];
+                sub(/[0-9]*[ \t]*/,"  ", $0);
+                print $0;
+                break
+            } } }'
+    else
+        awk '{printf "%8s", $1; sub(/[0-9]*[ \t]*/,"  ", $0); print $0; }'
+    fi
+}
 
-	function dud {
-		typeset humanPrint
-		[ "$1" = "-h" ] && humanPrint="$1" && shift
-		find "${@:-.}" -maxdepth 1 -mindepth 1 -type d -print0 | xargs --null du -sB1 | sort -n  | __print_size_list "$humanPrint"
-	}
+function dud
+{
+    typeset humanPrint
+    [ "$1" = "-h" ] && humanPrint="$1" && shift
+    find "${@:-.}" -maxdepth 1 -mindepth 1 -type d -print0 | xargs --null du -sB1 | sort -n  | __print_size_list "$humanPrint"
+}
 
-function lsmax {
-	typeset humanPrint
-	[ "$1" = "-h" ] && humanPrint="$1" && shift
-	find "${@:-.}" -xdev -printf "%s %p\n" | sort -n | __print_size_list "$humanPrint" | tail -25
+
+function lsmax
+{
+    typeset humanPrint
+    [ "$1" = "-h" ] && humanPrint="$1" && shift
+    find "${@:-.}" -xdev -printf "%s %p\n" | sort -n | __print_size_list "$humanPrint" | tail -25
 }
 
 #
@@ -231,66 +254,68 @@ function lsmax {
 #
 function scppath
 {
-	(( $# != 1 )) && echo "Usage: scppath <dir or file>" && return 1
-	typeset fqFile
-	fqFile=$(readlink -f "$1")
-	if [ ! -e "$fqFile" ]; then
-		echo >&2 "WARNING: File does not exist: $fqFile"
-	else
-		if [ ! -r "$fqFile" ]; then
-			echo >&2 "WARNING: File not readable: $fqFile"
-		fi
-		if [ ! -w "$fqFile" ]; then
-			echo >&2 "WARNING: File not writable: $fqFile"
-		fi
-	fi
-	echo "$USER@$(hostname):$fqFile"
+    (( $# != 1 )) && echo "Usage: scppath <dir or file>" && return 1
+    typeset fqFile
+    fqFile=$(readlink -f "$1")
+    if [ ! -e "$fqFile" ]; then
+        echo >&2 "WARNING: File does not exist: $fqFile"
+    else
+        if [ ! -r "$fqFile" ]; then
+            echo >&2 "WARNING: File not readable: $fqFile"
+        fi
+        if [ ! -w "$fqFile" ]; then
+            echo >&2 "WARNING: File not writable: $fqFile"
+        fi
+    fi
+    echo "$USER@$(hostname):$fqFile"
 }
 
 function up
 {
-	typeset arg cdstr
-	arg=${1:-1}
-	if [ -z "${arg//[0-9]/}" ]; then
-		# Want the sequence
-		# shellcheck disable=SC2046,SC2086
-		cdstr=$(printf '%0.s../' $(seq 1 $arg))
-	else
-		arg="${arg%/}"
-		cdstr=$(pwd | grep -o "^.*/${arg#/}[^/]*/")
-		if [ -z "$cdstr" ]; then
-			echo >&2 "No parent dir matching '${arg}*' found."
-			return 1
-		fi
-	fi
-	$BUILTIN cd "$cdstr"
+    typeset arg cdstr
+    arg=${1:-1}
+    if [ -z "${arg//[0-9]/}" ]; then
+        # Want the sequence
+        # shellcheck disable=SC2046,SC2086
+        cdstr=$(printf '%0.s../' $(seq 1 $arg))
+    else
+        arg="${arg%/}"
+        cdstr=$(pwd | grep -o "^.*/${arg#/}[^/]*/")
+        if [ -z "$cdstr" ]; then
+            echo >&2 "No parent dir matching '${arg}*' found."
+            return 1
+        fi
+    fi
+    $BUILTIN cd "$cdstr"
 }
 
-if [ "$IS_BASH" ]; then
-	function _up_complete
-	{
-		local cur prev opts dir
-		COMPREPLY=()
-		cur="${COMP_WORDS[COMP_CWORD]}"
-		prev="${COMP_WORDS[COMP_CWORD-1]}"
-		if [ -n "$cur" ]; then
-			cur=$(eval "echo ${cur}")
-			dir="${PWD##/}"
-			opts="${dir//\//\/$'\n'}"
-			#opts=$(echo "$(dirname ${PWD##/})" | tr "/" "/\n")
-			local IFS=$'\n'
-			COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-			# Do escaping
-			if [ ${#COMPREPLY[@]} = 1 ]; then
-				COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
-			else
-				for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-					COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
-				done
-			fi
-			return 0
-		fi
-	}
+if [ -n "${IS_BASH:-}" ]; then
+    function _up_complete
+    {
+        local cur prev opts dir
+        COMPREPLY=()
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        if [ -n "$cur" ]; then
+            cur=$(eval "echo ${cur}")
+            dir="${PWD##/}"
+            opts="${dir//\//\/$'\n'}"
+            #opts=$(echo "$(dirname ${PWD##/})" | tr "/" "/\n")
+            local IFS=$'\n'
+            # shellcheck disable=SC2207
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            # Do escaping
+            if [ ${#COMPREPLY[@]} = 1 ]; then
+                # shellcheck disable=SC2178
+                COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
+            else
+                for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+                    COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+                done
+            fi
+            return 0
+        fi
+    }
 complete -F _up_complete up
 complete -F _up_complete -
 fi
@@ -304,40 +329,41 @@ alias   -- ---='cd ../../..'
 alias   -- ----='cd ../../../..'
 
 function mkcd {
-	[ -d "$1" ] && echo >&2 "WARNING: Directory '$1' alread exists"
-	mkdir -p "$1" && cd "$1"
+    [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' alread exists"
+    # shellcheck disable=SC2164  # return using last exit code
+    mkdir -p "$1" && cd "$1"
 }
 
 # Print date/time for seconds since epoche
 function unixdate
 {
-	typeset secs=$1
-	if  [ -n "$(echo "$secs" | tr -d 0-9)" ]; then
-		echo "Parameter is not numeric."
-		return
-	fi
-	date "+%a %F %T %Z" -d "@$secs"
+    typeset secs=$1
+    if  [ -n "$(echo "$secs" | tr -d 0-9)" ]; then
+        echo "Parameter is not numeric."
+        return
+    fi
+    date "+%a %F %T %Z" -d "@$secs"
 }
 
 # Print date/time for milli-seconds since epoche
 function javadate
 {
-	typeset secs=$1
-	if  [ -n "$(echo "$secs" | tr -d 0-9)" ]; then
-		echo "Parameter is not numeric."
-		return
-	fi
-	secs=$(echo "$secs/1000" | bc)
-	date "+%a %F %T %Z" -d "@$secs"
+    typeset secs=$1
+    if  [ -n "$(echo "$secs" | tr -d 0-9)" ]; then
+        echo "Parameter is not numeric."
+        return
+    fi
+    secs=$(echo "$secs/1000" | bc)
+    date "+%a %F %T %Z" -d "@$secs"
 }
 
 # read text from stdin and prefix it with the current timestamp
 function ts_prefix
 {
-	typeset l
-	while read l; do
-		echo "$(date "+%Y-%m-%dT%H:%M:%S.%03N"): $l"
-	done
+    typeset l
+    while read -r l; do
+        echo "$(date "+%Y-%m-%dT%H:%M:%S.%03N"): $l"
+    done
 }
 
 #
@@ -345,13 +371,13 @@ function ts_prefix
 #
 function cols
 {
-	[ $# != 1 ] && echo >&2 "Usage: cols <num>" && return 1
-	typeset C
-	C=$1
-	[ "$C" = "max" ] && C=500
-	[ -n "${C//[0-9]/}" ] && echo >&2 "Argument must be numeric or 'max'." && return 1
-	eval "$(resize)" 2>/dev/null
-	printf "\e[8;%d;%d;t" "$LINES" "$C"
+    [ $# != 1 ] && echo >&2 "Usage: cols <num>" && return 1
+    typeset C
+    C=$1
+    [ "$C" = "max" ] && C=500
+    [ -n "${C//[0-9]/}" ] && echo >&2 "Argument must be numeric or 'max'." && return 1
+    eval "$(resize)" 2>/dev/null
+    printf "\e[8;%d;%d;t" "$LINES" "$C"
 }
 
 #
@@ -359,13 +385,13 @@ function cols
 #
 function lines
 {
-	[ $# != 1 ] && echo >&2 "Usage: lines <num>" && return 1
-	typeset L
-	L=$1
-	[ "$L" = "max" ] && L=500
-	[ -n "${L//[0-9]/}" ] && echo >&2 "Argument must be numeric or 'max'." && return 1
-	eval "$(resize)" 2>/dev/null
-	printf "\e[8;%d;%d;t" "$L" "$COLUMNS"
+    [ $# != 1 ] && echo >&2 "Usage: lines <num>" && return 1
+    typeset L
+    L=$1
+    [ "$L" = "max" ] && L=500
+    [ -n "${L//[0-9]/}" ] && echo >&2 "Argument must be numeric or 'max'." && return 1
+    eval "$(resize)" 2>/dev/null
+    printf "\e[8;%d;%d;t" "$L" "$COLUMNS"
 }
 
 #---------[ Quick Change Directory ]-------------------------------------------
@@ -390,207 +416,220 @@ export DIRSTORE=~/.dirstore
 #
 function dstore
 {
-	# IMPORTANT: reset OPTIND
-	typeset -i OPTIND=1
-	while  getopts "el" o "$@"; do
-		case "$o" in
-			e) ${EDITOR:-vi} "$DIRSTORE"; return $? ;;
-			l) cat "$DIRSTORE"; return $? ;;
-			*)
-				echo >&2 "Usage:"
-				echo >&2 "  dstore"
-				echo >&2 "     Store current directory."
-				echo >&2 "  dstore dir.."
-				echo >&2 "     Store dir(s)."
-				echo >&2 "  dstore :label"
-				echo >&2 "     Store current directory with label."
-				echo >&2 "  dstore :label dir"
-				echo >&2 "     Store given directory with label."
-				echo >&2 "  dstore -e"
-				echo >&2 "     Open index in editor."
-				echo >&2 "  dstore -l"
-				echo >&2 "     Display index."
-				echo >&2 ""
-				return 1
-		esac
-	done
-	shift $((OPTIND-1))
+    # IMPORTANT: reset OPTIND
+    typeset -i OPTIND=1
+    while  getopts "el" o "$@"; do
+        case "$o" in
+            e) ${EDITOR:-vi} "$DIRSTORE"; return $? ;;
+            l) cat "$DIRSTORE"; return $? ;;
+            *)
+                echo >&2 "Usage:"
+                echo >&2 "  dstore"
+                echo >&2 "     Store current directory."
+                echo >&2 "  dstore dir.."
+                echo >&2 "     Store dir(s)."
+                echo >&2 "  dstore :label"
+                echo >&2 "     Store current directory with label."
+                echo >&2 "  dstore :label dir"
+                echo >&2 "     Store given directory with label."
+                echo >&2 "  dstore -e"
+                echo >&2 "     Open index in editor."
+                echo >&2 "  dstore -l"
+                echo >&2 "     Display index."
+                echo >&2 ""
+                return 1
+        esac
+    done
+    shift $((OPTIND-1))
 
-	[ $# -eq 0 ] && set -- "$PWD"
+    [ $# -eq 0 ] && set -- "$PWD"
 
-	typeset d
+    typeset d
 
-	case "$1" in
-		:*)
-			if [ $# -eq 1 ]; then
-				d="."
-			elif [ $# -ne 2 ]; then
-				echo >&2 "ERROR: Expected 2 parameters"
-				return 1
-			else
-				d="$2"
-			fi
-			d=$(cd "$d" && /bin/pwd)
-			echo "$1 $d" >> $DIRSTORE
-			;;
-		*)
-			for d in "$@"; do
-				if [ -d "$d" ]; then
-					d=$(cd "$d" && /bin/pwd)
-					echo "$d" >> $DIRSTORE
-				else
-					echo >&2 "$d: Not a directory"
-				fi
-			done
-			;;
-	esac
+    case "$1" in
+        :*)
+            if [ $# -eq 1 ]; then
+                d="."
+            elif [ $# -ne 2 ]; then
+                echo >&2 "ERROR: Expected 2 parameters"
+                return 1
+            else
+                d="$2"
+            fi
+            d=$(cd "$d" && /bin/pwd)
+            echo "$1 $d" >> $DIRSTORE
+            ;;
+        *)
+            for d in "$@"; do
+                if [ -d "$d" ]; then
+                    d=$(cd "$d" && /bin/pwd)
+                    echo "$d" >> $DIRSTORE
+                else
+                    echo >&2 "$d: Not a directory"
+                fi
+            done
+            ;;
+    esac
 
-	# delete duplicates
-	sort -u $DIRSTORE > $DIRSTORE.tmp
-	mv $DIRSTORE.tmp $DIRSTORE
+    # delete duplicates
+    sort -u $DIRSTORE > $DIRSTORE.tmp
+    mv $DIRSTORE.tmp $DIRSTORE
 }
 
 function qc
 {
-	# IMPORTANT: reset OPTIND
-	typeset -i OPTIND=1
-	while  getopts "l" o "$@"; do
-		case "$o" in
-			l) # list labeled directories
-				grep "^:" $DIRSTORE
-				return 0
-				;;
-			*)
-				# unknown option
-				echo >&2 "Usage:"
-				echo >&2 "  qc dir"
-				echo >&2 "    Change to directory matching 'dir*'"
-				echo >&2 "  qc dir1 dir2"
-				echo >&2 "    Change to directory matching 'dir1*/dir2*'"
-				echo >&2 "  qc -"
-				echo >&2 "    Act like 'cd -'"
-				echo >&2 "  qc"
-				echo >&2 "    Act like 'cd'"
-				echo >&2 "  qc -l"
-				echo >&2 "    List labeled dirs."
-				return 1
-				;;
-		esac
-	done
-	shift $((OPTIND-1))
+    # IMPORTANT: reset OPTIND
+    typeset -i OPTIND=1
+    while  getopts "l" o "$@"; do
+        case "$o" in
+            l) # list labeled directories
+                grep "^:" $DIRSTORE
+                return 0
+                ;;
+            *)
+                # unknown option
+                echo >&2 "Usage:"
+                echo >&2 "  qc dir"
+                echo >&2 "    Change to directory matching 'dir*'"
+                echo >&2 "  qc dir1 dir2"
+                echo >&2 "    Change to directory matching 'dir1*/dir2*'"
+                echo >&2 "  qc -"
+                echo >&2 "    Act like 'cd -'"
+                echo >&2 "  qc"
+                echo >&2 "    Act like 'cd'"
+                echo >&2 "  qc -l"
+                echo >&2 "    List labeled dirs."
+                return 1
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))
 
-	if [ $# -eq 0 ]; then
-		cd
-		return
-	elif [ $# -eq 1 ]; then
-		if [ "$1" = "-" ]; then
-			cd -
-			return
-		fi
-	elif [ "$1" = "--" ]; then
-		shift
-	fi
+    if [ $# -eq 0 ]; then
+        # shellcheck disable=SC2164  # returning below
+        cd
+        return
+    elif [ $# -eq 1 ]; then
+        if [ "$1" = "-" ]; then
+            # shellcheck disable=SC2164  # returning below
+            cd -
+            return
+        fi
+    elif [ "$1" = "--" ]; then
+        shift
+    fi
 
-	typeset call_param="$*"
+    typeset call_param="$*"
 
-	typeset pattern=""
-	case "$1" in
-		:*) pattern="^$1";;
-		*)
-			# pattern="$(printf '%s*/' "$@" | sed 's%/\*/%/%g;s%\**/$%*%;s%\*%[^/]*%g')"
-			typeset w
-			for w in "${@}"; do
-				pattern="${pattern}/${w}[^/]*"
-			done
-			# not doable with ${x/y/z}
-			# shellcheck disable=SC2001
-			pattern="$(echo "$pattern" | sed 's%///*%/%g')"
-			pattern="${pattern}\$"
-			#echo "PATTERN:>>$pattern<<"
-			;;
-	esac
+    typeset pattern=""
+    case "$1" in
+        :*) pattern="^$1";;
+        *)
+            # pattern="$(printf '%s*/' "$@" | sed 's%/\*/%/%g;s%\**/$%*%;s%\*%[^/]*%g')"
+            typeset w
+            for w in "${@}"; do
+                pattern="${pattern}/${w}[^/]*"
+            done
+            # not doable with ${x/y/z}
+            # shellcheck disable=SC2001
+            pattern="$(echo "$pattern" | sed 's%///*%/%g')"
+            pattern="${pattern}\$"
+            #echo "PATTERN:>>$pattern<<"
+            ;;
+    esac
 
-	oldIFS="$IFS"
-	IFS="$NL"
-	set --
-	# Hopfully IFS prevents word splitting
-	# shellcheck disable=SC2046
-	set -- $(grep -i -- "$pattern" "$DIRSTORE" | sed "s/^:[^ ]* //" |sort|uniq)
-	IFS="$oldIFS"
-	case $# in
-		0 ) echo >&2 "Not found: '$call_param' ($pattern)" ;;
-		1 ) $BUILTIN cd "$1" ;;
-		* )
-			typeset dir
-			PS3safe=$PS3
-			PS3="# or 'q' to quit? "
-			select dir in "$@"; do
-				if [ "$dir" = "" ]; then
-					[ "$REPLY" = "q" ] && break
-				else
-					$BUILTIN cd "$dir"
-					break
-				fi
-			done
-			PS3=$PS3safe
-			unset PS3safe
-			;;
-	esac
+    oldIFS="$IFS"
+    IFS="$NEWLINE"
+    set --
+    # Hopfully IFS prevents word splitting
+    # shellcheck disable=SC2046
+    set -- $(grep -i -- "$pattern" "$DIRSTORE" | sed "s/^:[^ ]* //" |sort -u | xargs -i sh -c 'test -d {} && echo {}')
+    IFS="$oldIFS"
+    case $# in
+        0 ) echo >&2 "Not found: '$call_param' ($pattern)" ;;
+        1 ) $BUILTIN cd "$1" ;;
+        * )
+            typeset dir
+            PS3safe=$PS3
+            PS3="# or 'q' to quit? "
+            select dir in "$@"; do
+                if [ "$dir" = "" ]; then
+                    [ "$REPLY" = "q" ] && break
+                else
+                    $BUILTIN cd "$dir"
+                    break
+                fi
+            done
+            PS3=$PS3safe
+            unset PS3safe
+            ;;
+    esac
 }
 
 # if bash: add command line completion for qc
 if [ "$IS_BASH" ]; then
-	#
-	# Simplified command line completion for Quick Change Directory
-	#
-	_qc_complete()
-	{
-		local cur prev opts
-		COMPREPLY=()
-		cur="${COMP_WORDS[COMP_CWORD]}"
-		prev="${COMP_WORDS[COMP_CWORD-1]}"
-		if [ -n "$cur" ]; then
-			cur=$(eval "echo ${cur}")
-			if [ "$prev" = ":" ]; then
-				opts=$(grep "^:${cur}[^ ]* " "${DIRSTORE}" | sed "s% .*%%" | sed "s%^:%%")
-			else
-				opts=$(grep "/${cur}[^/]*" "${DIRSTORE}" | sed "s%^.*/%%")
-			fi
-			local IFS=$'\n'
-			COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-			# Do escaping
-			if [ ${#COMPREPLY[@]} = 1 ]; then
-				COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
-			else
-				for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-					COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
-				done
-			fi
-			return 0
-		fi
-	}
+    #
+    # Simplified command line completion for Quick Change Directory
+    #
+    _qc_complete()
+    {
+        local cur prev opts
+        COMPREPLY=()
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        if [ -n "$cur" ]; then
+            cur=$(eval "echo ${cur}")
+            if [ "$prev" = ":" ]; then
+                opts=$(grep "^:${cur}[^ ]* " "${DIRSTORE}" | sed "s% .*%%" | sed "s%^:%%")
+            else
+                opts=$(grep "/${cur}[^/]*" "${DIRSTORE}" | sed "s%^.*/%%")
+            fi
+            local IFS=$'\n'
+            # shellcheck disable=SC2207
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            # Do escaping
+            if [ ${#COMPREPLY[@]} = 1 ]; then
+                # shellcheck disable=SC2178
+                COMPREPLY=$(printf "%q" "${COMPREPLY[0]}")
+            else
+                for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+                    COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+                done
+            fi
+            return 0
+        fi
+    }
 complete -F _qc_complete qc
 fi
 
 #---------[ Bash Completions ]-------------------------------------------------
 
 if [ "$IS_BASH" ]; then
-	[ -s "$HOME/.was-complete.bash" ] && . "$HOME/.was-complete.bash"
-	[ -s "$HOME/.maven-completion" ] && . "$HOME/.maven-completion"
+    # shellcheck disable=SC1091
+    [ -s "$HOME/.was-complete.bash" ] && . "$HOME/.was-complete.bash"
+    if [ -s "$HOME/.maven-completion.bash" ]; then
+        # shellcheck disable=SC1091
+        . "$HOME/.maven-completion.bash"
+    elif [ -s "$HOME/.maven-completion" ]; then
+        # shellcheck disable=SC1091
+        . "$HOME/.maven-completion"
+    fi
 fi
 
 #---------[ VIM Config ]-------------------------------------------------------
 # Create minimum vimrc in .vimrc.rks
-if ! grep "^\" VERSION:$RKS_VERSION\$" $HOME/.vimrc.rks >/dev/null 2>&1; then
-	cat > $HOME/.vimrc.rks <<EOF
+if ! grep "^\" VERSION:$RKS_VERSION\$" "$HOME/.vimrc.rks" >/dev/null 2>&1; then
+    cat > "$HOME/.vimrc.rks" <<EOF
 " VERSION:$RKS_VERSION
 "
 " VIM configuration
 "
 
 if(&compatible == 1)
-	set nocompatible
+    set nocompatible
 endif
+
+set visualbell
 
 " assume dark background
 set background=dark
@@ -601,6 +640,7 @@ syntax on
 filetype plugin indent on
 " try to change xterm title
 set title
+set titlestring=%{\$HOSTNAME}:\\ %t%(\\ %M%)%(\\ (%{expand(\\"%:p:~:h\\")})%)%(\\ %a%)\\ -\\ VIM
 " no mouse
 set mouse=
 " display cursor position
@@ -649,4 +689,4 @@ fi
 # make .vimrc.rks the vim config file
 export VIMINIT="source $HOME/.vimrc.rks"
 
-# vim:ft=sh:noet:ts=4:sw=4:
+# vim:ft=sh:et:ts=4:sw=4:

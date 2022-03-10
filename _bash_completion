@@ -10,9 +10,9 @@
 
 
 
-if [ -f ${HOME}/.was-completion.bash ]; then
-    . ${HOME}/.was-completion.bash
-fi
+#if [ -f ${HOME}/.was-completion.bash ]; then
+#    . ${HOME}/.was-completion.bash
+#fi
 
 if [ -f ${HOME}/.maven-completion.bash ]; then
     . ${HOME}/.maven-completion.bash

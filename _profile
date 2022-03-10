@@ -15,7 +15,7 @@ umask 022
 
 export GDK_NATIVE_WINDOWS=1
 
-EDITOR=vim
+EDITOR=vi
 VISUAL=vim
 
 ulimit -n 4096
@@ -57,22 +57,39 @@ fi
 
 
 # if running bash
-if [ -n "$BASH_VERSION" ]; then
-    # include .bashrc if it exists
-    if [ -f "$HOME/.bashrc" ]; then
-        . "$HOME/.bashrc"
-    fi
+#if [ -n "$BASH_VERSION" ]; then
+#    # include .bashrc if it exists
+#    if [ -f "$HOME/.bashrc" ]; then
+#        . "$HOME/.bashrc"
+#    fi
+#fi
+
+
+# Cleanup path for Fedora
+if [ "$(readlink -f /bin)" = "/usr/bin" ]; then
+    PATH="$(echo ":$PATH:" | sed 's|:/usr/bin:|:/bin:|g;s/^::*//;s/::*$//')"
+fi
+if [ "$(readlink -f /sbin)" = "/usr/sbin" ]; then
+    PATH="$(echo ":$PATH:" | sed 's|:/usr/sbin:|:/sbin:|g;s/^::*//;s/::*$//')"
 fi
 
 if [ -d "/opt/vim/bin" ] ; then
     PATH="/opt/vim/bin:$PATH"
 fi
-# set PATH so it includes user's private bin if it exists
+
+# set PATH to include user's private bin dirs
+if [ -d "$HOME/local/bin" ] ; then
+    PATH="$HOME/local/bin:$PATH"
+fi
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 if [ -d "$HOME/sbin" ] ; then
     PATH="$HOME/sbin:$PATH"
+fi
+
+if [ -d "$HOME/.gem/ruby/bin" ]; then
+    PATH="$PATH:$HOME/.gem/ruby/bin"
 fi
 
 if [ -n "$DISPLAY" ]; then

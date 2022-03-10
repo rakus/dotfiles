@@ -51,7 +51,7 @@ TERM xterm*
 # reset to "normal" color
 RESET 0
 # directory
-DIR 01;34
+DIR 00;94
 # symbolic link. (If you set this to 'target' instead of a
 # numerical value, the color is as for the file pointed to.)
 LINK 01;36

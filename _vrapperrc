@@ -5,4 +5,20 @@ set scrolloff=4
 set shiftwidth=4
 set shiftround
 set et
+set noexitlinkmode
 
+
+eclipseaction AddBlockComment org.eclipse.jdt.ui.edit.text.java.add.block.comment
+
+"Action definition ID of the source -> add import action
+eclipseaction AddImport org.eclipse.jdt.ui.edit.text.java.add.import
+
+"Add JavaDoc
+eclipseaction AddJavaDocComment org.eclipse.jdt.ui.edit.text.java.add.javadoc.comment
+
+"definition ID of the source -> add unimplemented constructors action
+eclipseaction AddUnimplementedContructors org.eclipse.jdt.ui.edit.text.java.add.unimplemented.constructors
+
+eclipseaction junit org.eclipse.jdt.junit.junitShortcut.run
+
+eclipseaction Run org.eclipse.jdt.debug.ui.localJavaShortcut.run

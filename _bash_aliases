@@ -308,7 +308,7 @@ alias -- ------='up 6'
 function mkcd {
     [ -d "$1" ] && echo >&2 "WARNING: Directory '$1' already exists"
     # shellcheck disable=SC2164
-    mkdir -p "$1" && cd "$1"
+    mkdir -p "$1" && 'cd' "$1"
 }
 
 #---------[ ALIASES ]----------------------------------------------------------
@@ -466,15 +466,20 @@ alias   dir='ls -lF'         # list in long format
 alias   ltr='ls -ltr'
 alias   lsr='ls -lSr'
 
+#
+# ff - find file
+# Short for `find . -iname <filepattern>`
+# Usage: ff [search-dir...] filepattern
+#
 ff()
 {
-    if [ $# -ne 1 ]; then
-        echo "Usage: ff <filepattern>"
+    if [ $# -lt 1 ]; then
+        echo "Usage: ff [search-dir...] <filepattern>"
         return 1
     fi
-    length=$(($#-1))
-    searchDirs=( "${@:1:$length}" )
-    name="${!#}"
+    local length=$(($#-1))
+    local searchDirs=( "${@:1:$length}" )
+    local name="${!#}"
 
     if [ ${#searchDirs[@]} -eq 0 ]; then
         find . -iname "$name"
@@ -491,9 +496,9 @@ ffg()
         echo "Usage: ffg <grep-parammeter> <filepattern>"
         return 1
     fi
-    length=$(($#-1))
-    grepargs=( "${@:1:$length}" )
-    fn="${!#}"
+    local length=$(($#-1))
+    local grepargs=( "${@:1:$length}" )
+    local fn="${!#}"
 
     find . -iname "$fn" -exec grep "${grepargs[@]}" {} /dev/null \;
 }
