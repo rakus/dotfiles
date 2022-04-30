@@ -139,7 +139,7 @@ if [ ! -d "$bin_target_dir" ]; then
     execute mkdir -p "$bin_target_dir"
 fi
 
-for fn in _*[!~]; do
+for fn in _*[!~] _*/*[!~]; do
     if [ -f "$fn" ]; then
         install_rcfile "$fn" "$rc_target_dir"
     fi
