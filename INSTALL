@@ -29,6 +29,7 @@ do_install()
 {
     local fqfn="$1"
     local tgt="$2"
+    local tgtDir
 
     if [ -e "$tgt" ]; then
         if [ "$mode" = "symlink" ] && [ -L "$tgt" ]; then
@@ -55,6 +56,16 @@ do_install()
                 exit 1
                 ;;
         esac
+    else
+        tgtDir="$(dirname "$tgt")"
+        # create directory if needed
+        if [ ! -d "$tgtDir" ]; then
+            echo "Creating directory: $tgtDir"
+            if ! execute mkdir -p "$tgtDir"; then
+                echo >&2 "ERROR: Couldn't create target dir: $tgtDir"
+                exit 1
+            fi
+        fi
     fi
 
     if [ "$mode" == "copy" ]; then
