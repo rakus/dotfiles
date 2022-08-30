@@ -354,7 +354,7 @@ else
     function fq
     {
         local arg
-        for arg in "$@"; do
+        for arg in "${@:-.}"; do
             if [ -d "$arg" ]; then
                 (cd "$arg" && pwd) || return 1
             else
