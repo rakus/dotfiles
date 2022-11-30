@@ -4,6 +4,11 @@ if [ -e "/usr/share/fzf/shell/key-bindings.bash" ]; then
     FZF_ALT_C_COMMAND="cat $HOME/.qc/home.index"
     FZF_ALT_UPPER_C_COMMAND="cat $HOME/.qc/home.index.hidden"
 
+    if [ -n "$(command -v fd)" ]; then
+        export FZF_DEFAULT_COMMAND="fd --type file --follow --color=always"
+        export FZF_DEFAULT_OPTS="--ansi"
+    fi
+
     source /usr/share/fzf/shell/key-bindings.bash
 
 
@@ -14,6 +19,7 @@ if [ -e "/usr/share/fzf/shell/key-bindings.bash" ]; then
     }
 
     # ALT-C - cd into the selected directory
+    # shellcheck disable=SC2016
     bind -m emacs-standard '"\eC": " \C-b\C-k \C-u`__fzf_hidden_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
     bind -m vi-command '"\eC": "\C-z\eC\C-z"'
     bind -m vi-insert '"\eC": "\C-z\eC\C-z"'

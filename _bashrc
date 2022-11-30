@@ -183,7 +183,7 @@ fi
 export QC_FZF=true
 
 if [ -d ~/.bashrc.d ]; then
-    for rc in ~/.bashrc.d/*; do
+    for rc in ~/.bashrc.d/*.bash; do
         if [ -f "$rc" ]; then
             . "$rc"
         fi

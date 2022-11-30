@@ -258,9 +258,9 @@ function up
     if [ -z "${arg//[0-9]/}" ]; then
         cdstr=$(printf '%0.s../' $(seq 1 "$arg"))
     else
-        arg="${arg##/}"
+        arg="${arg#/}"
         if [[ "$arg" = */ ]]; then
-            arg="${arg%%/}"
+            arg="${arg%/}"
         else
             arg="${arg}[^/]*"
         fi
@@ -280,17 +280,15 @@ function _up_complete
     local cur opts dir
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    if [ -n "$cur" ]; then
-        cur=$(eval "echo ${cur}")
-        dir="${PWD##/}"
-        opts="${dir//\//\/$'\n'}"
-        mapfile -d$'\n' -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
-        # Do escaping
-        for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-            COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
-        done
-        return 0
-    fi
+    cur=$(eval "echo ${cur}")
+    dir="${PWD##/}"
+    opts="${dir//\//\/$'\n'}"
+    mapfile -d$'\n' -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+    # Do escaping
+    for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+        COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+    done
+    return 0
 }
 complete -F _up_complete up
 complete -F _up_complete -
