@@ -23,7 +23,7 @@ set keymap vi-command
 "j": history-search-forward
 
 set keymap vi-insert
-"\C-l": "\e0C"
+"\C-l": clear-screen
 #"\C-a": "\eBi\"\eEa\""
 $endif
 
