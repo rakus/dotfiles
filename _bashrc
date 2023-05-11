@@ -194,7 +194,14 @@ if [ -f "$HOME/.qc/quick_change_directory.sh" ]; then
     . "$HOME/.qc/quick_change_directory.sh"
 fi
 
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+if [[ -s "/opt/sdkman/bin/sdkman-init.sh" ]]; then
+    export SDKMAN_DIR="/opt/sdkman"
+    source "/opt/sdkman/bin/sdkman-init.sh"
+fi
+
 #set +x
 #exec 2>&3 3>&-
 
 true
+
