@@ -92,6 +92,11 @@ if [ -d "$HOME/.gem/ruby/bin" ]; then
     PATH="$PATH:$HOME/.gem/ruby/bin"
 fi
 
+# Setup rust / rustup
+if [ -e "$HOME/.cargo/env" ]; then
+    . "$HOME/.cargo/env"
+fi
+
 if [ -n "$DISPLAY" ]; then
     if [ -f "$HOME/.Xmodmap" ] ; then
         /usr/bin/xmodmap "$HOME/.Xmodmap"
