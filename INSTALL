@@ -13,8 +13,8 @@ script_name="$(basename "$0")"
 cd "$script_dir" || exit 1
 
 ts=$(date "+%Y-%m-%dT%H.%M.%S")
-bin_target_dir="$HOME/bin"
 rc_target_dir="$HOME"
+completion_target_dir="$HOME/.local/share/bash-completion/completions"
 
 execute()
 {
@@ -146,8 +146,8 @@ case "$1" in
 esac
 
 
-if [ ! -d "$bin_target_dir" ]; then
-    execute mkdir -p "$bin_target_dir"
+if [ ! -d "$completion_target_dir" ]; then
+    execute mkdir -p "$completion_target_dir"
 fi
 
 for fn in _*[!~] _*/*[!~]; do
@@ -156,17 +156,13 @@ for fn in _*[!~] _*/*[!~]; do
     fi
 done
 
-for fn in [!_]*[!~]; do
-    case "$fn" in
-        INSTALL) : ;;
-        README*) : ;;
-        *)
-            if [ ! -d "$fn" ]; then
-                install_file "$fn" "$bin_target_dir"
-            fi
-            ;;
-    esac
+(
+cd completions
+for fn in *[!~]; do
+    if [ -f "$fn" ]; then
+        install_file "$fn" "$completion_target_dir"
+    fi
 done
-
+)
 
 

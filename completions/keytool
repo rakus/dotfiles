@@ -9,7 +9,7 @@ _keytool_complete() {
     if [ "$COMP_CWORD" = 1 ]; then
         cmd="-help -certreq -changealias -delete -exportcert -genkeypair -genseckey -gencert -importcert -importpass -importkeystore -keypasswd -list -printcert -printcertreq -printcrl -storepasswd"
 
-        COMPREPLY=( $(compgen -W "${cmd}" -- "${cur}") )
+        mapfile -t COMPREPLY < <(compgen -W "${cmd}" -- "${cur}")
         return
     fi
 
@@ -18,11 +18,9 @@ _keytool_complete() {
     case "$prev" in
         -deststoretype|-srcstoretype|-storetype)
             # typically used store types .. there are others too
-            COMPREPLY=( $(compgen -W "JKS JCEKS PKCS12 PKCS11 DKS" -- "${cur}") )
+            mapfile -t COMPREPLY < <(compgen -W "JKS JCEKS PKCS12 PKCS11 DKS" -- "${cur}")
             return
             ;;
-
-
         -destkeypass|-deststorepass|-keypass|-new|-providerarg|-srckeypass|-srcstorepass|-storepass)
             return
             ;;
@@ -32,12 +30,10 @@ _keytool_complete() {
         -providerclass|-providername|-sslserver|-sigalg|-srcalias|-srcprovidername|-startdate|-validity|-ext)
             return
             ;;
-
         -destkeystore|-file|-infile|-jarfile|-outfile|-keystore|-srckeystore)
-            COMPREPLY=( $(compgen -f "${cur}") )
+            mapfile -t COMPREPLY < <(compgen -f "${cur}")
             return 0
             ;;
-
         -noprompt|-protected|-rfc|-srcprotected|-systemlineendings|-trustcacerts|-v)
             :
             ;;
@@ -95,7 +91,7 @@ _keytool_complete() {
             return
         esac
 
-        COMPREPLY=($(compgen -W "${compl} -v -help" -- "${cur}") )
+        mapfile -t COMPREPLY < <(compgen -W "${compl} -v -help" -- "${cur}")
 }
 
 complete -F _keytool_complete -o filenames keytool
