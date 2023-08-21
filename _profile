@@ -48,31 +48,6 @@ if [ -n "$USER_FULL_NAME" ]; then
     export ECLIPSE_AUTHOR="$USER_FULL_NAME"
 fi
 
-#if [ -n "$USER_FULL_NAME" ] && [ -n "$USER_EMAIL" ]; then
-#    export GIT_AUTHOR_NAME="$USER_FULL_NAME"
-#    export GIT_COMMITTER_NAME="$USER_FULL_NAME"
-#    export GIT_COMMITTER_EMAIL="$USER_EMAIL"
-#    export GIT_AUTHOR_EMAIL="$USER_EMAIL"
-#fi
-
-
-# if running bash
-#if [ -n "$BASH_VERSION" ]; then
-#    # include .bashrc if it exists
-#    if [ -f "$HOME/.bashrc" ]; then
-#        . "$HOME/.bashrc"
-#    fi
-#fi
-
-
-# Cleanup path for Fedora
-if [ "$(readlink -f /bin)" = "/usr/bin" ]; then
-    PATH="$(echo ":$PATH:" | sed 's|:/usr/bin:|:/bin:|g;s/^::*//;s/::*$//')"
-fi
-if [ "$(readlink -f /sbin)" = "/usr/sbin" ]; then
-    PATH="$(echo ":$PATH:" | sed 's|:/usr/sbin:|:/sbin:|g;s/^::*//;s/::*$//')"
-fi
-
 if [ -d "/opt/vim/bin" ] ; then
     PATH="/opt/vim/bin:$PATH"
 fi
@@ -101,10 +76,5 @@ if [ -n "$DISPLAY" ]; then
     if [ -f "$HOME/.Xmodmap" ] ; then
         /usr/bin/xmodmap "$HOME/.Xmodmap"
     fi
-
-    # set the Unity "show-hud" shortcut to my liking
-    #gsettings set "org.compiz.integrated" "show-hud" "['<Super>h']"
 fi
 
-#export LANG="de_DE.utf8"
-#export LANGUAGE="en"

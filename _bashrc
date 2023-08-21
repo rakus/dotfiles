@@ -185,6 +185,7 @@ export QC_FZF=true
 if [ -d ~/.bashrc.d ]; then
     for rc in ~/.bashrc.d/*.bash; do
         if [ -f "$rc" ]; then
+            # shellcheck disable=SC1090
             . "$rc"
         fi
     done
@@ -203,10 +204,13 @@ fi
 if [[ -s "/opt/sdkman/bin/sdkman-init.sh" ]]; then
     export SDKMAN_DIR="/opt/sdkman"
     source "/opt/sdkman/bin/sdkman-init.sh"
+
+    # SDK is rarely used, it could also be loaded on demand.
+    #alias sdk='unalias sdk;source "/opt/sdkman/bin/sdkman-init.sh";sdk'
 fi
+
 
 #set +x
 #exec 2>&3 3>&-
 
 true
-

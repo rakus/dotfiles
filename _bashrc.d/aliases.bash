@@ -346,22 +346,18 @@ jllocate()
 }
 
 #alias fq="readlink -f"
-if type off-readlink >/dev/null 2>&1; then
-    alias fq="readlink -f"
-else
-    function fq
-    {
-        local arg
-        for arg in "${@:-.}"; do
-            if [ -d "$arg" ]; then
-                (cd "$arg" && pwd) || return 1
-            else
-                (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")") || return 1
-            fi
-        done
-        return 0
-    }
-fi
+function fq
+{
+    local arg
+    for arg in "${@:-.}"; do
+        if [ -d "$arg" ]; then
+            (cd "$arg" && pwd) || return 1
+        else
+            (fq "$(dirname "$arg")" | tr -d '\n'  && echo "/$(basename "$arg")") || return 1
+        fi
+    done
+    return 0
+}
 
 function fqc
 {
