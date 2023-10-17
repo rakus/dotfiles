@@ -14,7 +14,7 @@
 
 alias wlanreset="sudo killall wpa_supplicant"
 
-alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N'
+alias isodate='date +%Y-%m-%dT%H:%M:%S.%03N%:z'
 
 # list my local git repos
 function gitrepos
@@ -27,7 +27,7 @@ function gitrepos
 }
 
 
-function addToPath()
+function addToPath
 {
     local dir
     dir=$(readlink -f "$1")
@@ -124,7 +124,7 @@ numbered()
 # scp-path is: <user>@<host>:<full qualified filename>
 # Print a warning if is not readable.
 #
-function scppath()
+function scppath
 {
     local fqFile
     if [[ $1 =~ ^/ ]]; then
@@ -218,6 +218,7 @@ function cd_wc
     elif [ $# -eq 1 ]; then
         dir="$1"
     else
+        # shellcheck disable=SC2155
         typeset dirPattern=$(printf "%q*/" "$@" | sed 's%\\\*%*%g;s%/\*/%/%g;s%///*%/%g')
         # shellcheck disable=SC2086 # dirpattern unquoted due to wildcards
         mapfile -d$'\n' -t dirs < <(ls -d ${dirPattern} 2>/dev/null)
@@ -286,7 +287,7 @@ function _up_complete
     mapfile -d$'\n' -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
     # Do escaping
     for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-        COMPREPLY[$i]=$(printf "%q" "${COMPREPLY[$i]}")
+        COMPREPLY[i]=$(printf "%q" "${COMPREPLY[$i]}")
     done
     return 0
 }
@@ -329,6 +330,7 @@ rmbak()
                 ;;
         esac
     done
+    # shellcheck disable=SC2086
     find . $depth -name \*~ -type f -print $action
 }
 
@@ -339,11 +341,6 @@ alias   rmcore='rm core core.*.dmp Snap.*.trc javacore.*.txt heapdump.*.phd'
 # locate using local locatedb
 alias   llocate='locate -d "$HOME/.locatedb"'
 alias   olocate='locate -d "$HOME/OLD-PC/rks/.locatedb"'
-
-jllocate()
-{
-    llocate "$(echo "$1" | sed "s%\.%/%g;s%/java$%.java%")"
-}
 
 #alias fq="readlink -f"
 function fq
@@ -389,18 +386,16 @@ alias   qenv='set|grep -i -E'
 alias   cp='cp -i'
 alias   md='mkdir'
 
-alias stop-ultrabay="sudo /usr/local/sbin/ultrabay_eject"
-
-if type xdg-open &>/dev/null; then
+if command -v xdg-open &>/dev/null; then
     #alias uff=xdg-open
     UFF_CMD=xdg-open
-elif type gnome-open &>/dev/null; then
+elif command -v gnome-open &>/dev/null; then
     #alias uff=gnome-open
     UFF_CMD=gnome-open
-elif type open &>/dev/null; then
+elif command -v open &>/dev/null; then
     #alias uff=open
     UFF_CMD=open
-elif type mimeopen &>/dev/null; then
+elif command -v mimeopen &>/dev/null; then
     #function uff
     #{
     #    mimeopen "$@" &
@@ -497,12 +492,6 @@ ffg()
     find . -iname "$fn" -exec grep "${grepargs[@]}" {} /dev/null \;
 }
 
-# AIX stuff
-#alias   lsx='li -Ox'          # list executables
-#alias   llx='li -l -Ox'
-#alias   lsd='li -Od'          # list directories
-#alias   lld='li -l -Od'
-
 # size of subdirs, sorted by size.
 function dud {
     local fmt=( '--format=%9f' )
@@ -526,78 +515,16 @@ function lsmax {
 }
 
 # list directories
-alias lsd='lsFgrep "/"'
-alias lld='ls --color=always -lAF | grep --color=never "/$"'
+alias lsd='ls -F | grep --color=never "/$" | column -xc$(tput cols)'
+alias lld='ls -lAF | grep --color=never "/$"'
 # list executables
-alias lsx='lsFgrep "*"'
-alias llx='ls --color=always -laF | grep --color=never "\\*"'
-
-# Spaltenweise Ausgabe für gefilterte ls-Ausgabe
-function lsFgrep {
-    local pat
-    pat=$1
-    shift
-    sh <<__EOF__
-    export COLS=$(tput cols)
-    ls -F $* |
-    awk -v "tc=$pat" '
-    BEGIN {
-        maxLen=0;
-        dirCount = 0;
-    }
-    {
-        if(index(\$0, tc) == length(\$0)) {
-            d=\$0;
-            dirs[dirCount] = \$0;
-            dirCount++;
-            if(length(d) > maxLen) {
-                maxLen = length(d);
-            }
-        }
-    }
-
-    END {
-        cols=ENVIRON["COLS"];
-
-        plen = maxLen + 2;
-
-        tabCols = int(cols / plen);
-        if(tabCols == 0) {
-            tabCols = 1;
-            plen=1;
-        }
-        tabLines = int(dirCount / tabCols);
-        if(tabLines != (dirCount / tabCols)) {
-            tabLines++;
-        }
-
-        #print "DirCont:  " dirCount;
-        #print "MaxLen:   " maxLen;
-        #print "Cols:     " cols;
-        #print "TabCols:  " tabCols;
-        #print "TabLines: " tabLines;
-
-        if(dirCount > 0) {
-            for (i=0; i<tabLines; i++) {
-                for(y=0; y < tabCols && (i + (y*tabLines)) < dirCount; y++) {
-                    idx=i + (y*tabLines);
-                    printf("%-" plen "s", dirs[idx]);
-                }
-                print "";
-            }
-        }
-        else {
-            system("echo Nothing found >&2");
-        }
-    }'
-__EOF__
-
-}
+alias lsx='ls -F | grep --color=never "\\*$" | column -xc$(tput cols)'
+alias llx='ls -laF | grep --color=never "\\*"'
 
 
 #---- Functions ----------------------------------------------------------------
 
-if type vimpager >/dev/null 2>&1; then
+if command -v vimpager >/dev/null 2>&1; then
     export PAGER=vimpager
 else
     function man
