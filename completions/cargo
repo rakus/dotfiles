@@ -1,0 +1,5 @@
+# Completion for cargo
+# generated dynamically to stay up-to-date
+
+. <(rustup completions bash cargo)
+

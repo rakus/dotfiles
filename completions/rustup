@@ -1,0 +1,4 @@
+# Completion for rustup
+# generated dynamically to stay up-to-date
+
+. <(rustup completions bash)
