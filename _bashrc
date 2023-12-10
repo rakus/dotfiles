@@ -115,8 +115,11 @@ if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
 
+# shellcheck disable=SC2034 # used by __git_ps1
 GIT_PS1_SHOWDIRTYSTATE=1
+# shellcheck disable=SC2034 # used by __git_ps1
 GIT_PS1_SHOWUNTRACKEDFILES=1
+# shellcheck disable=SC2034 # used by __git_ps1
 GIT_PS1_SHOWUPSTREAM=1
 
 if [ "$COLOR_SUPPORTED" = yes ]; then
@@ -133,7 +136,6 @@ fi
 if [ $SHLVL -gt 1 ]; then
     PS1="[$SHLVL]$PS1"
 fi
-
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -208,7 +210,6 @@ if [[ -s "/opt/sdkman/bin/sdkman-init.sh" ]]; then
     # SDK is rarely used, it could also be loaded on demand.
     #alias sdk='unalias sdk;source "/opt/sdkman/bin/sdkman-init.sh";sdk'
 fi
-
 
 #set +x
 #exec 2>&3 3>&-
