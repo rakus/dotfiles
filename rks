@@ -3,15 +3,23 @@
 #
 # ABSTRACT:  Combined Shell and Vim Setup. Should work for BASH and KSH.
 #
+# Typically used when multiple persons log in to a machine with the same userid
+# (e.g. a admin user).
+#
 # Also creates following files (if they don't exist):
 #     - .inputrc.rks
 #     - .vimrc.rks
+#
+# The extension 'rks' can be changed using the variable USRTAG
 #
 # AUTHOR: Ralf Schandl
 #
 # shellcheck shell=bash
 
+# used to detect whether .inputrc.rks and .vimrc.rks are up-to-date.
 RKS_VERSION=1
+
+USRTAG=rks
 
 case $- in
     *i*)
@@ -45,12 +53,12 @@ export HISTTIMEFORMAT='%F %T: '
 
 export HISTSIZE=2000
 
-export HISTFILE=${HOME}/.rks_history
+export HISTFILE=${HOME}/.history.${USRTAG}
 
 if [ "$IS_KSH" ]; then
-    export HISTFILE=${HOME}/.rks_ksh_history
+    export HISTFILE=${HOME}/.history_ksh.${USRTAG}
 elif [ "$IS_BASH" ]; then
-    export HISTFILE=${HOME}/.rks_bash_history
+    export HISTFILE=${HOME}/.history_bash.${USRTAG}
     history -r
     # disable history expansion with !
     #set +H
@@ -64,8 +72,8 @@ gh()
 
 #---------[ VI command line editing mode ]-------------------------------------
 set -o vi
-if ! grep "^# VERSION:$RKS_VERSION\$" "$HOME/.inputrc.rks" >/dev/null 2>&1; then
-    cat > "$HOME/.inputrc.rks" << EOF
+if ! grep "^# VERSION:$RKS_VERSION\$" "$HOME/.inputrc.${USRTAG}" >/dev/null 2>&1; then
+    cat > "$HOME/.inputrc.${USRTAG}" << EOF
 # VERSION:$RKS_VERSION
 set enable-bracketed-paste off
 set editing-mode vi
@@ -79,7 +87,7 @@ set keymap vi-command
 EOF
 fi
 
-INPUTRC=$HOME/.inputrc.rks
+INPUTRC=$HOME/.inputrc.${USRTAG}
 
 # load my inputrc
 bind -f "$INPUTRC"
@@ -410,9 +418,9 @@ if [ "$IS_BASH" ]; then
 fi
 
 #---------[ VIM Config ]-------------------------------------------------------
-# Create minimum vimrc in .vimrc.rks
-if ! grep "^\" VERSION:$RKS_VERSION\$" "$HOME/.vimrc.rks" >/dev/null 2>&1; then
-    cat > "$HOME/.vimrc.rks" <<EOF
+# Create minimum vimrc in .vimrc.${USRTAG}
+if ! grep "^\" VERSION:$RKS_VERSION\$" "$HOME/.vimrc.${USRTAG}" >/dev/null 2>&1; then
+    cat > "$HOME/.vimrc.${USRTAG}" <<EOF
 " VERSION:$RKS_VERSION
 "
 " VIM configuration
@@ -479,8 +487,8 @@ autocmd!  BufNewFile,BufRead pom.xml setlocal sw=2 et
 "    vim:tw=75 et ts=4 sw=4 sr ai comments=\:\" formatoptions=croq
 EOF
 fi
-# make .vimrc.rks the vim config file
-export VIMINIT="source $HOME/.vimrc.rks"
+# make .vimrc.${USRTAG} the vim config file
+export VIMINIT="source $HOME/.vimrc.${USRTAG}"
 
 
 #---------[ QC MINI ]----------------------------------------------------------
