@@ -11,7 +11,11 @@
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
+    . /etc/bashrc
+fi
+
+if [ -f "/$HOME/.profile" ]; then
+    . "/$HOME/.profile"
 fi
 
 
@@ -155,18 +159,9 @@ fi
 
 #---------[ Update the PATH ]--------------------------------------------------
 
-function addToPath()
-{
-    local dir
-    dir=$(readlink -f "$1")
-    if [ -d "$dir" ] && [[ ":$PATH:" != *":$dir:"* ]]; then
-        PATH="$PATH:$dir"
-    fi
-}
-
 # Add JAVA_HOME to path if it exists
 if [ -n "$JAVA_HOME" ]; then
-    addToPath "$JAVA_HOME/bin"
+    PATH="$PATH:$JAVA_HOME/bin"
 fi
 
 export PATH
@@ -181,9 +176,6 @@ fi
 
 #---------[ Includes ]---------------------------------------------------------
 
-# switch qc to use fzf
-export QC_FZF=true
-
 if [ -d ~/.bashrc.d ]; then
     for rc in ~/.bashrc.d/*.bash; do
         if [ -f "$rc" ]; then
@@ -192,6 +184,9 @@ if [ -d ~/.bashrc.d ]; then
         fi
     done
 fi
+
+# switch qc to use fzf
+export QC_FZF=true
 
 if [ -f "$HOME/.qc/quick_change_directory.sh" ]; then
     . "$HOME/.qc/quick_change_directory.sh"
@@ -203,12 +198,15 @@ if [ -e "$HOME/.cargo/env" ]; then
 fi
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-if [[ -s "/opt/sdkman/bin/sdkman-init.sh" ]]; then
-    export SDKMAN_DIR="/opt/sdkman"
-    source "/opt/sdkman/bin/sdkman-init.sh"
+if [[ -s "/opt/$USERNAME/sdkman/bin/sdkman-init.sh" ]]; then
+    export SDKMAN_DIR="/opt/$USERNAME/sdkman"
+    source "/opt/$USERNAME/sdkman/bin/sdkman-init.sh"
 
     # SDK is rarely used, it could also be loaded on demand.
-    #alias sdk='unalias sdk;source "/opt/sdkman/bin/sdkman-init.sh";sdk'
+    #alias sdk='unalias sdk;source "/opt/$USERNAME/sdkman/bin/sdkman-init.sh";sdk'
+elif [[ -s "/opt/sdkman/bin/sdkman-init.sh" ]]; then
+    export SDKMAN_DIR="/opt/sdkman"
+    source "/opt/sdkman/bin/sdkman-init.sh"
 fi
 
 #set +x

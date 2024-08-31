@@ -46,24 +46,25 @@ if [ -n "$USER_FULL_NAME" ]; then
     export ECLIPSE_AUTHOR="$USER_FULL_NAME"
 fi
 
-if [ -d "/opt/vim/bin" ] ; then
-    PATH="/opt/vim/bin:$PATH"
-fi
+add2path()
+{
+    a2p_path=""
+    for a2p in "$@"; do
+        if [ -d "$a2p" ]; then
+            if ! echo ":$PATH:" | grep -q ":$a2p:"; then
+                a2p_path="${a2p_path}${a2p}:"
+            fi
+        fi
+    done
 
-# set PATH to include user's private bin dirs
-if [ -d "$HOME/local/bin" ] ; then
-    PATH="$HOME/local/bin:$PATH"
-fi
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
-fi
-if [ -d "$HOME/sbin" ] ; then
-    PATH="$HOME/sbin:$PATH"
-fi
+    if [ -n "$a2p_path" ]; then
+        PATH="${a2p_path}${PATH}"
+    fi
 
-if [ -d "$HOME/.gem/ruby/bin" ]; then
-    PATH="$PATH:$HOME/.gem/ruby/bin"
-fi
+    unset a2p_path a2p
+}
+
+add2path "$HOME/bin" "$HOME/sbin" "$HOME/local/bin" "/opt/vim/bin" "/opt/$USERNAME/vim/bin" "$HOME/.gem/ruby/bin"
 
 # Setup rust / rustup
 if [ -e "$HOME/.cargo/env" ]; then
